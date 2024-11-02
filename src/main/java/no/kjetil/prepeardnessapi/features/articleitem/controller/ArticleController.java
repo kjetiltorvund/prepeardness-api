@@ -26,7 +26,9 @@ public class ArticleController {
     }
 
     @GetMapping(path = "/{id}")
-    @RequestMapping
+    public ArticleItemDto getArticleById(@PathVariable("id") long id) {
+        return convertToDto(articleItemRepository.findById(id).orElse(new ArticleItem()));
+    }
 
     @GetMapping
     public List<ArticleItemDto> getAll() {

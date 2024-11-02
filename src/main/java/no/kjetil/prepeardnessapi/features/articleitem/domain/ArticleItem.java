@@ -21,7 +21,13 @@ public class ArticleItem {
 
     private Instant expirationDate;
 
+    private boolean expired = false;
+
     private String barcode;
 
     private String QrCode;
+
+    private boolean active = true;
+
+    private String placement;
 }
