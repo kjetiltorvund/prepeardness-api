@@ -33,9 +33,6 @@ public class ArticleController {
     public List<ArticleItemDto> getAll() {
         List<ArticleItem> items = (List<ArticleItem>) articleItemRepository.findAll(); // This is a workaround for the DynamoDB repository
                 
-                //.stream().map(this::convertToDto).collect(Collectors.toList());
-                //.findAll()
-        //.stream().map(this::convertToDto).collect(Collectors.toList());
         return items.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());

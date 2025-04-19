@@ -43,7 +43,6 @@ public class DynamoDbConfig {
     @Bean
     public AWSCredentials awsCredentials() {
         return new BasicAWSCredentials(dynamoDbProps.getAccessKey(), dynamoDbProps.getSecretKey());
-        //return new BasicAWSCredentials(dynamoDbProps.getAccessKey(), dynamoDbProps.getSecretKey());
     }
 
     @Bean
