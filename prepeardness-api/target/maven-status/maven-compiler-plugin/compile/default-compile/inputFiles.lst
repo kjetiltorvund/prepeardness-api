@@ -1,0 +1,9 @@
+/home/ktmi/projects/private/java/prepeardness-api/prepeardness-api/src/main/java/no/kjetil/prepeardnessapi/App.java
+/home/ktmi/projects/private/java/prepeardness-api/prepeardness-api/src/main/java/no/kjetil/prepeardnessapi/config/ModelMapperConfig.java
+/home/ktmi/projects/private/java/prepeardness-api/prepeardness-api/src/main/java/no/kjetil/prepeardnessapi/features/articleitem/controller/ArticleController.java
+/home/ktmi/projects/private/java/prepeardness-api/prepeardness-api/src/main/java/no/kjetil/prepeardnessapi/features/articleitem/domain/ArticleItem.java
+/home/ktmi/projects/private/java/prepeardness-api/prepeardness-api/src/main/java/no/kjetil/prepeardnessapi/features/articleitem/dtos/ArticleItemDto.java
+/home/ktmi/projects/private/java/prepeardness-api/prepeardness-api/src/main/java/no/kjetil/prepeardnessapi/features/articleitem/repositories/ArticleItemRepository.java
+/home/ktmi/projects/private/java/prepeardness-api/prepeardness-api/src/main/java/no/kjetil/prepeardnessapi/features/email/service/EmailService.java
+/home/ktmi/projects/private/java/prepeardness-api/prepeardness-api/src/main/java/no/kjetil/prepeardnessapi/features/email/service/EmailServiceImpl.java
+/home/ktmi/projects/private/java/prepeardness-api/prepeardness-api/src/main/java/no/kjetil/prepeardnessapi/features/scheduled/CheckExpirationDatesJob.java

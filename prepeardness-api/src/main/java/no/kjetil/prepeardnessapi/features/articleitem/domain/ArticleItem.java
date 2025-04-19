@@ -25,7 +25,7 @@ public class ArticleItem {
 
     private String barcode;
 
-    private String QrCode;
+    private String qrCode;
 
     private boolean active = true;
 
