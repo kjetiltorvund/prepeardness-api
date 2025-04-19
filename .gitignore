@@ -27,3 +27,9 @@ replay_pid*
 .mvn
 
 .env
+
+target
+
+.vscode
+.vscode/*
+/.vscode/settings.json
