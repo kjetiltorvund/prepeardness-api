@@ -21,12 +21,14 @@ public class ArticleItem {
 
     private Instant expirationDate;
 
+    @Builder.Default
     private boolean expired = false;
 
     private String barcode;
 
     private String QrCode;
 
+    @Builder.Default
     private boolean active = true;
 
     private String placement;

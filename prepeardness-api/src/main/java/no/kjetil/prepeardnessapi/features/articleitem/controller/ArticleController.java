@@ -1,11 +1,9 @@
 package no.kjetil.prepeardnessapi.features.articleitem.controller;
 
-import com.fasterxml.jackson.databind.ObjectReader;
 import no.kjetil.prepeardnessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.prepeardnessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.prepeardnessapi.features.articleitem.repositories.ArticleItemRepository;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +17,7 @@ public class ArticleController {
 
     private ModelMapper modelMapper;
 
-    @Autowired
+
     public ArticleController(ArticleItemRepository articleItemRepository, ModelMapper modelMapper) {
         this.articleItemRepository = articleItemRepository;
         this.modelMapper = modelMapper;
