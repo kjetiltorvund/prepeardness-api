@@ -100,8 +100,20 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
-      <version>6.1.14</version>
+      <version>6.2.7</version>
     </dependency>
+
+    <dependency>
+      <groupId>com.sun.mail</groupId>
+      <artifactId>jakarta.mail</artifactId>
+      <version>2.0.1</version>
+    </dependency>
+
+<!--    <dependency>-->
+<!--      <groupId>jakarta.mail</groupId>-->
+<!--      <artifactId>jakarta.mail-api</artifactId>-->
+<!--      <version>2.1.5</version>-->
+<!--    </dependency>-->
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
