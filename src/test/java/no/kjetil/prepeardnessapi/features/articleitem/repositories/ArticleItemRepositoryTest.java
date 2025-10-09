@@ -1,19 +1,21 @@
 package no.kjetil.prepeardnessapi.features.articleitem.repositories;
 
-import no.kjetil.prepeardnessapi.App;
 import no.kjetil.prepeardnessapi.PostgreSqlIntegrationSetup;
 import no.kjetil.prepeardnessapi.features.articleitem.domain.ArticleItem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import java.time.LocalDate;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.*;
 
-@SpringBootTest(classes = App.class)
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
 class ArticleItemRepositoryTest extends PostgreSqlIntegrationSetup {
 
     @Autowired
