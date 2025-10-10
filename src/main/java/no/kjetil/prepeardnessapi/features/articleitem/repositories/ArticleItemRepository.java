@@ -1,18 +1,15 @@
 package no.kjetil.prepeardnessapi.features.articleitem.repositories;
 
 import no.kjetil.prepeardnessapi.features.articleitem.domain.ArticleItem;
-
-import org.socialsignin.spring.data.dynamodb.repository.DynamoDBCrudRepository;
-import org.socialsignin.spring.data.dynamodb.repository.EnableScan;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Date;
 import java.util.List;
 
-@EnableScan
 @Repository("articleItemRepository")
-public interface ArticleItemRepository extends DynamoDBCrudRepository<ArticleItem, String> {
-    //@Query("select * from ArticleItem as ai where ai.expirationDate < :date")
-    //List<ArticleItem> findAllByExpirationDateAfter(Date date);
+public interface ArticleItemRepository extends JpaRepository<ArticleItem, Long> {
+    @Query("select ai from ArticleItem ai where ai.expirationDate < :date")
+    List<ArticleItem> findAllByDatePassedExpirationDate(Date date);
 }

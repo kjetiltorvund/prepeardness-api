@@ -23,19 +23,18 @@ public class CheckExpirationDatesJob {
 
     @Scheduled(cron = "0 0 * * * *")
     public void checkIfAnythingIsExpired() {
-        List<ArticleItem> expiredArticles = (List<ArticleItem>) articleItemRepository.findAll();
-        //findAllByExpirationDateAfter(new Date(LocalDateTime.now().toInstant(ZoneOffset.UTC).getEpochSecond()));
+        List<ArticleItem> expiredArticles = articleItemRepository.findAllByDatePassedExpirationDate(new Date(LocalDateTime.now().toInstant(ZoneOffset.UTC).getEpochSecond()));
 
         if (expiredArticles.isEmpty()) {
             System.out.println("No expired articles");
             return;
         }
         StringBuilder emailBody = new StringBuilder("The following articles are expired:\n");
-//        for (ArticleItem articleItem : expiredArticles) {
-//            emailBody.append(articleItem.getArticleName()).append(" - ").append(articleItem.getExpirationDate()).append("\n");
-//        }
-//        emailBody.append("Please check your inventory and remove expired items.");
-//        emailService.sendEmail("kjetiltorvund@gmail.com", emailBody
-//                .toString());
+        for (ArticleItem articleItem : expiredArticles) {
+            emailBody.append(articleItem.getArticleName()).append(" - ").append(articleItem.getExpirationDate()).append("\n");
+        }
+        emailBody.append("Please check your inventory and remove expired items.");
+        emailService.sendEmail("kjetiltorvund@gmail.com", emailBody
+                .toString());
     }
 }

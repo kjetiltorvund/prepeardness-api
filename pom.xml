@@ -41,11 +41,6 @@
         <artifactId>spring-data-commons</artifactId>
         <!--version>2.7.18</version-->
     </dependency>
-<!--    <dependency>-->
-<!--        <groupId>com.amazonaws</groupId>-->
-<!--        <artifactId>aws-java-sdk-dynamodb</artifactId>-->
-<!--        <version>1.12.714</version>-->
-<!--    </dependency>-->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
@@ -60,11 +55,6 @@
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
       <version>2.18.3</version>
-    </dependency>
-    <dependency>
-        <groupId>com.github.derjust</groupId>
-        <artifactId>spring-data-dynamodb</artifactId>
-        <version>5.1.0</version>
     </dependency>
     <dependency>
       <groupId>org.projectlombok</groupId>
@@ -201,6 +191,23 @@
       <version>3.4.0</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>2.14.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>5.20.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>5.20.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -238,6 +245,11 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>3.3.0</version>
+          <configuration>
+            <parallel>classes</parallel>
+            <useUnlimitedThreads>false</useUnlimitedThreads>
+            <threadCount>4</threadCount>
+          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>

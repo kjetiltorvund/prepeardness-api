@@ -2,16 +2,22 @@ package no.kjetil.prepeardnessapi.features.articleitem.repositories;
 
 import no.kjetil.prepeardnessapi.PostgreSqlIntegrationSetup;
 import no.kjetil.prepeardnessapi.features.articleitem.domain.ArticleItem;
+import no.kjetil.prepeardnessapi.features.scheduled.ArticleItemTestData;
+import org.hamcrest.Matchers;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.*;
 
 @DataJpaTest
@@ -27,16 +33,56 @@ class ArticleItemRepositoryTest extends PostgreSqlIntegrationSetup {
 
     @Test
     public void shouldPersistArticleItem() {
-        LocalDate now = LocalDate.now();
         ArticleItem articleItem = new ArticleItem();
         articleItem.setArticleName("Leverpostei");
-                //.active(true)
-                //.expired(false)
- //               .expirationDate(now.plusDays(2).atTime(LocalTime.MIDNIGHT).toInstant(ZoneOffset.UTC))
-                //.build();
 
         ArticleItem saved = repository.save(articleItem);
 
         assertThat(saved.getId(), notNullValue());
+    }
+
+    @Test
+    public void shouldReturnAllArticleItemsWithExpiredDate() {
+        List<ArticleItem> expiredArticles = new ArrayList<>();
+        for(int i = 0; i < 10; i++) {
+            expiredArticles.add(ArticleItemTestData.randomExpiredBetweenDaysAgo(3, 10));
+        }
+
+        List<ArticleItem> expected = repository.saveAll(expiredArticles);
+
+        Date date = Instant.now().toDate();
+        List<ArticleItem> actual = repository.findAllByDatePassedExpirationDate(date);
+
+        assertThat(actual.size(), greaterThan(0));
+    }
+
+    @Test
+    public void shouldOnlyReturnExpiredArticles() {
+        // Arrange
+        List<ArticleItem> expiredArticles = new ArrayList<>();
+        for(int i = 0; i < 10; i++) {
+            expiredArticles.add(ArticleItemTestData.randomExpiredBetweenDaysAgo(3, 10));
+        }
+
+        List<ArticleItem> persistedExpiredArticles = repository.saveAll(expiredArticles);
+
+        ArticleItem articleItem = ArticleItem.builder()
+                .articleName("Leverpostei")
+                .expired(false)
+                .expirationDate(Instant.now().toDateTime(DateTimeZone.UTC).plusDays(5).toDate())
+                .placement("Kjøleskapet")
+                .build();
+
+        repository.save(articleItem);
+
+        // Act
+        Date date = Instant.now().toDate();
+        List<ArticleItem> actual = repository.findAllByDatePassedExpirationDate(date);
+
+        List<ArticleItem> all = repository.findAll();
+
+        // Assert
+        assertThat(actual, hasSize(persistedExpiredArticles.size()));
+        assertThat(all.size(), greaterThan(actual.size()));
     }
 }
