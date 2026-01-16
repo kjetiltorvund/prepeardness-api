@@ -20,7 +20,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendEmail(String to, String msg) {
+    public int sendEmail(String to,  String topic, String msg) {
 
         Properties prop = new Properties();
         prop.put("mail.smtp.host", "smtp.gmail.com");
@@ -54,5 +54,7 @@ public class EmailServiceImpl implements EmailService {
         } catch (MessagingException e) {
             e.printStackTrace();
         }
+
+        return 1;
     }
 }

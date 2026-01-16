@@ -26,7 +26,7 @@ class EmailServiceImplTest {
         EmailService emailService = new EmailServiceImpl(username, password);
 
         Assertions.assertDoesNotThrow(() -> {
-            emailService.sendEmail("kjetiltorvund@gmail.com", "Testing");
+            emailService.sendEmail("kjetiltorvund@gmail.com", "Testing", "Testing");
         }, "An unexpected exception was thrown!");
     }
 }

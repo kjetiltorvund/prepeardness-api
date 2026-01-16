@@ -26,7 +26,7 @@ public class CheckExpirationDatesJob {
     
     @Scheduled(cron = "0 0 * * * *")
     public void checkIfAnythingIsExpired() {
-        List<ArticleItem> expiredArticles = articleItemRepository.findAllByExpirationDateAfter(new Date(LocalDateTime.now().toInstant(ZoneOffset.UTC).getEpochSecond()));
+        List<ArticleItem> expiredArticles = articleItemRepository.findAllByDatePassedExpirationDate(new Date(LocalDateTime.now().toInstant(ZoneOffset.UTC).getEpochSecond()));
         
         List<String> expiredItems = new ArrayList<>();
         
@@ -44,7 +44,7 @@ public class CheckExpirationDatesJob {
         int amountOfDaysToExpiration = 3;
         Date inTheFuture = Date.from(LocalDateTime.now().plusDays(amountOfDaysToExpiration).atZone(ZoneId.systemDefault()).toInstant());
         
-        List<ArticleItem> soonToBeExpiredArticles = articleItemRepository.findAllByExpirationDateAfter(inTheFuture);
+        List<ArticleItem> soonToBeExpiredArticles = articleItemRepository.findAllByDatePassedExpirationDate(inTheFuture);
         
         List<String> expiredItems = new ArrayList<>();
         

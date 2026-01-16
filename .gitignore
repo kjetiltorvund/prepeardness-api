@@ -28,12 +28,10 @@ replay_pid*
 
 .env
 
-<<<<<<< HEAD:prepeardness-api/.gitignore
 *.lst
-=======
+
 target
 
 .vscode
 .vscode/*
 /.vscode/settings.json
->>>>>>> 117cfb1492523019f053e0c64f243ce0b6ba52b0:.gitignore

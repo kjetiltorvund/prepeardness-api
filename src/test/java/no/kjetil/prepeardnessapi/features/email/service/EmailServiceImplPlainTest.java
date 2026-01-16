@@ -16,6 +16,6 @@ public class EmailServiceImplPlainTest {
 
         EmailService emailService = new EmailServiceImpl(username, password);
 
-        assertDoesNotThrow(() -> emailService.sendEmail("kjetiltorvund@gmail.com", "Testing"));
+        assertDoesNotThrow(() -> emailService.sendEmail("kjetiltorvund@gmail.com", "Testing", "Testing"));
     }
 }

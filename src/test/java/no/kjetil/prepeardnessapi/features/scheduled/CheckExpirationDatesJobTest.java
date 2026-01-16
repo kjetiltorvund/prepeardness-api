@@ -36,6 +36,6 @@ class CheckExpirationDatesJobTest {
         checkExpirationDatesJob.checkIfAnythingIsExpired();
 
         // Assert
-        Mockito.verify(emailService, times(1)).sendEmail(anyString(), anyString());
+        Mockito.verify(emailService, times(1)).sendEmail(anyString(), anyString(), anyString());
     }
 }
