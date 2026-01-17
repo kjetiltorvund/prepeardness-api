@@ -4,10 +4,19 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public class SharedPostgresContainer extends PostgreSQLContainer<SharedPostgresContainer> {
-    private static final String IMAGE = "postgres:16-alpine";
-    private static final SharedPostgresContainer INSTANCE =
-    new SharedPostgresContainer()
-            .withDatabaseName("prepeardnessdb")
+    private static final String IMAGE = "postgres:16.11-alpine";
+    private static SharedPostgresContainer INSTANCE;
+
+    public SharedPostgresContainer() {
+        super(DockerImageName.parse(IMAGE));
+    }
+
+    @SuppressWarnings("resource")
+    public static SharedPostgresContainer getInstance() {
+        if(INSTANCE == null) {
+            
+            INSTANCE = new SharedPostgresContainer()
+            .withDatabaseName("preparednessdb")
             .withUsername("test")
             .withPassword("test")
             .withReuse(true)
@@ -18,12 +27,7 @@ public class SharedPostgresContainer extends PostgreSQLContainer<SharedPostgresC
                     "-c", "shared_buffers=16MB",
                     "-c", "max_connections=50")
             .withTmpFs(java.util.Map.of("/var/lib/postgresql/data", "rw"));
-
-    public SharedPostgresContainer() {
-        super(DockerImageName.parse(IMAGE));
-    }
-
-    public static SharedPostgresContainer getInstance() {
+        }
         return INSTANCE;
     }
 
