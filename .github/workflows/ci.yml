@@ -19,4 +19,6 @@ jobs:
           java-version: '21'
 
       - name: Build with Maven
+        env:
+          EMAIL_PASSWORD: "test"
         run: mvn clean package
