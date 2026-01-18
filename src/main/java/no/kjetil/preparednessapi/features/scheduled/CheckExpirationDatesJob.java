@@ -17,8 +17,8 @@ import java.util.stream.Collectors;
 
 @Component
 public class CheckExpirationDatesJob {
-    private ArticleItemRepository articleItemRepository;
-    private EmailService emailService;
+    private final ArticleItemRepository articleItemRepository;
+    private final EmailService emailService;
     
     public CheckExpirationDatesJob(ArticleItemRepository articleItemRepository, EmailService emailService) {
         this.articleItemRepository = articleItemRepository;
@@ -31,11 +31,9 @@ public class CheckExpirationDatesJob {
         
         List<String> expiredItems = new ArrayList<>();
         
-        expiredArticles.stream().forEach(expiredItem -> {
-            expiredItems.add(String.format("%s %s has expired, please replace item located in %s\n", expiredItem.getExpirationDate(), expiredItem.getArticleName(), expiredItem.getPlacement()));
-        });
+        expiredArticles.forEach(expiredItem -> expiredItems.add(String.format("%s %s has expired, please replace item located in %s\n", expiredItem.getExpirationDate(), expiredItem.getArticleName(), expiredItem.getPlacement())));
         
-        if(expiredItems.size() > 0) {
+        if(!expiredItems.isEmpty()) {
             emailService.sendEmail("kjetiltorvund@gmail.com", "Expired goods", expiredItems.stream().map(Object::toString).collect(Collectors.joining()));
         }
     }
@@ -49,11 +47,9 @@ public class CheckExpirationDatesJob {
         
         List<String> expiredItems = new ArrayList<>();
         
-        soonToBeExpiredArticles.stream().forEach(soonToExpireItem -> {
-            expiredItems.add(String.format("%s %s will expire soon, item located in %s\n", soonToExpireItem.getExpirationDate(), soonToExpireItem.getArticleName(), soonToExpireItem.getPlacement()));
-        });
+        soonToBeExpiredArticles.forEach(soonToExpireItem -> expiredItems.add(String.format("%s %s will expire soon, item located in %s\n", soonToExpireItem.getExpirationDate(), soonToExpireItem.getArticleName(), soonToExpireItem.getPlacement())));
 
-        if(expiredItems.size() > 0) {
+        if(!expiredItems.isEmpty()) {
             emailService.sendEmail("kjetiltorvund@gmail.com", "Goods expiring soon", expiredItems.stream().map(Object::toString).collect(Collectors.joining()));
         }
     }

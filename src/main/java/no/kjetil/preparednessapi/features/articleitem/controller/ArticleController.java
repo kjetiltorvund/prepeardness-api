@@ -14,9 +14,9 @@ import java.util.stream.Collectors;
 @RequestMapping(path = "/v1/articles")
 public class ArticleController {
 
-    private ArticleItemRepository articleItemRepository;
+    private final ArticleItemRepository articleItemRepository;
 
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
 
     public ArticleController(ArticleItemRepository articleItemRepository, ModelMapper modelMapper) {
@@ -25,13 +25,13 @@ public class ArticleController {
     }
 
     @GetMapping(path = "/{id}")
-    public ArticleItemDto getArticleById(@PathVariable("id") Long id) {
+    public ArticleItemDto getArticleById(@PathVariable Long id) {
         return convertToDto(articleItemRepository.findById(id).orElse(new ArticleItem()));
     }
 
     @GetMapping
     public List<ArticleItemDto> getAll() {
-        List<ArticleItem> items = (List<ArticleItem>) articleItemRepository.findAll(); // This is a workaround for the DynamoDB repository
+        List<ArticleItem> items = articleItemRepository.findAll(); // This is a workaround for the DynamoDB repository
                 
         return items.stream()
                 .map(this::convertToDto)

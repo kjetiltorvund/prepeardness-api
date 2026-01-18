@@ -1,5 +1,7 @@
 package no.kjetil.preparednessapi.features.email.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
@@ -10,9 +12,10 @@ import java.util.Properties;
 @Service
 public class EmailServiceImpl implements EmailService {
 
+    Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
 
-    private String username;
-    private String password;
+    private final String username;
+    private final String password;
 
     public EmailServiceImpl(@Value("${mail.username}") String username, @Value("${mail.password}") String password) {
         this.username = username;
@@ -52,7 +55,7 @@ public class EmailServiceImpl implements EmailService {
             System.out.println("Done");
 
         } catch (MessagingException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage());
         }
 
         return 1;

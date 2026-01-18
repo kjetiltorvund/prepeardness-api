@@ -23,10 +23,6 @@ public class ArticleItemTestData {
 
     private ArticleItemTestData() {}
 
-    public static ArticleItem randomExpired() {
-        return randomExpiredBetweenDaysAgo(1, 180);
-    }
-
     public static ArticleItem randomExpiredBetweenDaysAgo(int minDaysAgo, int maxDaysAgo) {
         Instant now = Instant.now();
 

@@ -39,8 +39,4 @@ public class DotenvLoader {
         return v != null ? v : defaultValue;
     }
 
-    public static Map<String, String> all() {
-        loadIfNeeded();
-        return Map.copyOf(CACHE);
-    }
 }

@@ -1,5 +1,6 @@
 package no.kjetil.preparednessapi.features.email.service;
 
+import no.kjetil.preparednessapi.DotenvTestInitializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -7,8 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import no.kjetil.preparednessapi.DotenvTestInitializer;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(initializers = DotenvTestInitializer.class)
@@ -21,7 +20,6 @@ public class EmailServiceTest {
     private String username;
     
     private EmailService emailService;
-    private String sendGridApiKey;
 
     @BeforeEach
     public void setup() {

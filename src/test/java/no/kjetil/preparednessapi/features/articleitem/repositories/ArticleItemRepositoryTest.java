@@ -53,7 +53,7 @@ class ArticleItemRepositoryTest extends PostgreSqlIntegrationSetup {
         Date date = Instant.now().toDate();
         List<ArticleItem> actual = repository.findAllByDatePassedExpirationDate(date);
 
-        assertThat(actual.size(), greaterThan(0));
+        assertThat(actual.size(), is(expected.size()));
     }
 
     @Test
