@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi.features.email.service;
+package no.kjetil.preparednessapi.features.email.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import no.kjetil.prepeardnessapi.DotenvTestInitializer;
+import no.kjetil.preparednessapi.DotenvTestInitializer;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(initializers = DotenvTestInitializer.class)

@@ -1,10 +1,11 @@
-package no.kjetil.prepeardnessapi.features.scheduled;
+package no.kjetil.preparednessapi.features.scheduled;
 
-import no.kjetil.prepeardnessapi.features.articleitem.domain.ArticleItem;
-import no.kjetil.prepeardnessapi.features.articleitem.repositories.ArticleItemRepository;
-import no.kjetil.prepeardnessapi.features.email.service.EmailService;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
+import no.kjetil.preparednessapi.features.articleitem.repositories.ArticleItemRepository;
+import no.kjetil.preparednessapi.features.email.service.EmailService;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

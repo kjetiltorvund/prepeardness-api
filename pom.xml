@@ -16,7 +16,7 @@
   <packaging>jar</packaging>
 
   <name>preparadness-api</name>
-  <description>A simple prepeardness-api.</description>
+  <description>A simple preparedness-api.</description>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
 
@@ -172,14 +172,14 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>1.20.6</version>
+      <version>1.21.4</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>postgresql</artifactId>
-      <version>1.20.6</version>
+      <version>1.21.4</version>
       <scope>test</scope>
     </dependency>
 
@@ -228,6 +228,13 @@
       <artifactId>java-dotenv</artifactId>
       <version>5.2.2</version>
       <scope>test</scope>
+    </dependency>
+    <!-- Source: https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-project-info-reports-plugin -->
+    <dependency>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-project-info-reports-plugin</artifactId>
+      <version>3.9.0</version>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 

@@ -1,9 +1,9 @@
-package no.kjetil.prepeardnessapi.features.articleitem.repositories;
+package no.kjetil.preparednessapi.features.articleitem.repositories;
 
-import no.kjetil.prepeardnessapi.PostgreSqlIntegrationSetup;
-import no.kjetil.prepeardnessapi.features.articleitem.domain.ArticleItem;
-import no.kjetil.prepeardnessapi.features.scheduled.ArticleItemTestData;
-import org.hamcrest.Matchers;
+import no.kjetil.preparednessapi.PostgreSqlIntegrationSetup;
+import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
+import no.kjetil.preparednessapi.features.scheduled.ArticleItemTestData;
+
 import org.joda.time.DateTimeZone;
 import org.joda.time.Instant;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi.features.email.service;
+package no.kjetil.preparednessapi.features.email.service;
 
 import org.springframework.stereotype.Service;
 import jakarta.mail.*;

@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi;
+package no.kjetil.preparednessapi;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

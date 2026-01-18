@@ -1,9 +1,10 @@
-package no.kjetil.prepeardnessapi.features.articleitem.repositories;
+package no.kjetil.preparednessapi.features.articleitem.repositories;
 
-import no.kjetil.prepeardnessapi.features.articleitem.domain.ArticleItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+
+import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 
 import java.util.Date;
 import java.util.List;

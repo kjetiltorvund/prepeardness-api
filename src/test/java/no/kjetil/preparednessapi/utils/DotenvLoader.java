@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi.utils;
+package no.kjetil.preparednessapi.utils;
 
 import io.github.cdimascio.dotenv.Dotenv;
 

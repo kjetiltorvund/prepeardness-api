@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi.features.articleitem.dtos;
+package no.kjetil.preparednessapi.features.articleitem.dtos;
 
 import lombok.*;
 

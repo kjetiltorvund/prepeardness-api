@@ -1,9 +1,10 @@
-package no.kjetil.prepeardnessapi.features.scheduled;
+package no.kjetil.preparednessapi.features.scheduled;
 
-import no.kjetil.prepeardnessapi.features.articleitem.domain.ArticleItem;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Instant;
+
+import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;

@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi.config;
+package no.kjetil.preparednessapi.config;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Bean;

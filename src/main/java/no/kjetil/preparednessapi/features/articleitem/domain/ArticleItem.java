@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi.features.articleitem.domain;
+package no.kjetil.preparednessapi.features.articleitem.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi.config;
+package no.kjetil.preparednessapi.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi.config;
+package no.kjetil.preparednessapi.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

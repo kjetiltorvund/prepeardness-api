@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi.config;
+package no.kjetil.preparednessapi.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

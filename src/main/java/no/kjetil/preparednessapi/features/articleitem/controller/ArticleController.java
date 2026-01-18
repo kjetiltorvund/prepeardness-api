@@ -1,10 +1,11 @@
-package no.kjetil.prepeardnessapi.features.articleitem.controller;
+package no.kjetil.preparednessapi.features.articleitem.controller;
 
-import no.kjetil.prepeardnessapi.features.articleitem.domain.ArticleItem;
-import no.kjetil.prepeardnessapi.features.articleitem.dtos.ArticleItemDto;
-import no.kjetil.prepeardnessapi.features.articleitem.repositories.ArticleItemRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.web.bind.annotation.*;
+
+import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
+import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
+import no.kjetil.preparednessapi.features.articleitem.repositories.ArticleItemRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;

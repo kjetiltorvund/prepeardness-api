@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi;
+package no.kjetil.preparednessapi;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.context.ApplicationContextInitializer;

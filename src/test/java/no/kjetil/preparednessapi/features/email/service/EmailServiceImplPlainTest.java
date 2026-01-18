@@ -1,8 +1,9 @@
-package no.kjetil.prepeardnessapi.features.email.service;
+package no.kjetil.preparednessapi.features.email.service;
 
-import no.kjetil.prepeardnessapi.utils.DotenvLoader;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import no.kjetil.preparednessapi.utils.DotenvLoader;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 

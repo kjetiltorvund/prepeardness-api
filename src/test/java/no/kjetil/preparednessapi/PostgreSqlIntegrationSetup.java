@@ -1,4 +1,4 @@
-package no.kjetil.prepeardnessapi;
+package no.kjetil.preparednessapi;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -14,9 +14,10 @@ import static org.hamcrest.Matchers.is;
 @Testcontainers
 public abstract class PostgreSqlIntegrationSetup {
 
+    @SuppressWarnings("resource")
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("prepeardnessdb");
+            .withDatabaseName("preparednessdb");
 
     @BeforeAll
     static void beforeAll() {

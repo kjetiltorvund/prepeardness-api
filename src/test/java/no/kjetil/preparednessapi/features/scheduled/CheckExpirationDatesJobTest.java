@@ -1,12 +1,12 @@
-package no.kjetil.prepeardnessapi.features.scheduled;
+package no.kjetil.preparednessapi.features.scheduled;
 
-import no.kjetil.prepeardnessapi.features.articleitem.repositories.ArticleItemRepository;
-import no.kjetil.prepeardnessapi.features.email.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
+import no.kjetil.preparednessapi.features.articleitem.repositories.ArticleItemRepository;
+import no.kjetil.preparednessapi.features.email.service.EmailService;
 import static org.mockito.Mockito.*;
 
 class CheckExpirationDatesJobTest {

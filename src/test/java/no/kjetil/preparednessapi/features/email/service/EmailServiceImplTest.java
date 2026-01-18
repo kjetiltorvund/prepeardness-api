@@ -1,6 +1,5 @@
-package no.kjetil.prepeardnessapi.features.email.service;
+package no.kjetil.preparednessapi.features.email.service;
 
-import no.kjetil.prepeardnessapi.DotenvTestInitializer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -8,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import no.kjetil.preparednessapi.DotenvTestInitializer;
 
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(initializers = DotenvTestInitializer.class)
