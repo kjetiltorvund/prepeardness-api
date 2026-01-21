@@ -1,17 +1,18 @@
 package no.kjetil.preparednessapi.features.articleitem.controller;
 
-import org.modelmapper.ModelMapper;
-import org.springframework.web.bind.annotation.*;
-
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.repositories.ArticleItemRepository;
+import org.modelmapper.ModelMapper;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping(path = "/v1/articles")
+@RequestMapping(path = "/articles", headers = "API-Version=v1")
 public class ArticleController {
 
     private final ArticleItemRepository articleItemRepository;
@@ -25,27 +26,67 @@ public class ArticleController {
     }
 
     @GetMapping(path = "/{id}")
-    public ArticleItemDto getArticleById(@PathVariable Long id) {
-        return convertToDto(articleItemRepository.findById(id).orElse(new ArticleItem()));
+    public ResponseEntity<ArticleItemDto> getArticleById(@PathVariable Long id) {
+        ArticleItemDto itemDto = convertToDto(articleItemRepository.findById(id).orElse(new ArticleItem()));
+        return ResponseEntity.ok(itemDto);
     }
 
     @GetMapping
-    public List<ArticleItemDto> getAll() {
+    public ResponseEntity<List<ArticleItemDto>> getAll() {
         List<ArticleItem> items = articleItemRepository.findAll(); // This is a workaround for the DynamoDB repository
-                
-        return items.stream()
+
+        List<ArticleItemDto> articleItemDtos = items.stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
+        return ResponseEntity.ok(articleItemDtos);
     }
 
     @PostMapping
-    public ArticleItemDto createArticleItem(@RequestBody ArticleItemDto requestBody) {
+    public ResponseEntity<ArticleItemDto> createArticleItem(@RequestBody ArticleItemDto requestBody) {
         ArticleItem articleItem = modelMapper.map(requestBody, ArticleItem.class);
 
         ArticleItem saved = articleItemRepository.save(articleItem);
 
-        return modelMapper.map(saved, ArticleItemDto.class);
+        return ResponseEntity.ok(modelMapper.map(saved, ArticleItemDto.class));
     }
+
+    @PostMapping(path = "/batch")
+    public ResponseEntity<List<ArticleItemDto>> createArticleItemsBatch(@RequestBody List<ArticleItemDto> requestBody) {
+        List<ArticleItem> articleItems = requestBody.stream()
+                .map(dto -> modelMapper.map(dto, ArticleItem.class))
+                .toList();
+
+        List<ArticleItem> savedItems = articleItemRepository.saveAll(articleItems);
+
+        List<ArticleItemDto> savedDtos = savedItems.stream()
+                .map(item -> modelMapper.map(item, ArticleItemDto.class))
+                .toList();
+
+        return ResponseEntity.ok(savedDtos);
+    }
+
+    @PutMapping
+    public ResponseEntity<ArticleItemDto> updateArticleItem(@RequestBody ArticleItemDto requestBody) {
+        ArticleItem articleItem = modelMapper.map(requestBody, ArticleItem.class);
+
+        ArticleItem updated = articleItemRepository.save(articleItem);
+
+        return ResponseEntity.ok(modelMapper.map(updated, ArticleItemDto.class));
+    }
+
+    @DeleteMapping(path = "/{id}")
+    public ResponseEntity<Void> deleteArticleById(@PathVariable Long id) {
+        Optional<ArticleItem> articleItemOptional = articleItemRepository.findById(id);
+
+        if (articleItemOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        articleItemRepository.deleteById(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
 
     private ArticleItemDto convertToDto(ArticleItem articleItem) {
         return modelMapper.map(articleItem, ArticleItemDto.class);
