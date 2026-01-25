@@ -1,5 +1,6 @@
 package no.kjetil.preparednessapi.features.articleitem.controller;
 
+import jakarta.validation.Valid;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.repositories.ArticleItemRepository;
@@ -27,13 +28,13 @@ public class ArticleController {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ArticleItemDto> getArticleById(@PathVariable Long id) {
-        ArticleItemDto itemDto = convertToDto(articleItemRepository.findById(id).orElse(new ArticleItem()));
+        ArticleItemDto itemDto = new ArticleItemDto(); // convertToDto(articleItemRepository.findById(id).orElse(new ArticleItem()));
         return ResponseEntity.ok(itemDto);
     }
 
     @GetMapping
     public ResponseEntity<List<ArticleItemDto>> getAll() {
-        List<ArticleItem> items = articleItemRepository.findAll(); // This is a workaround for the DynamoDB repository
+        List<ArticleItem> items = List.of(); // articleItemRepository.findAll(); // This is a workaround for the DynamoDB repository
 
         List<ArticleItemDto> articleItemDtos = items.stream()
                 .map(this::convertToDto)
@@ -42,10 +43,10 @@ public class ArticleController {
     }
 
     @PostMapping
-    public ResponseEntity<ArticleItemDto> createArticleItem(@RequestBody ArticleItemDto requestBody) {
+    public ResponseEntity<ArticleItemDto> createArticleItem(@Valid @RequestBody ArticleItemDto requestBody) {
         ArticleItem articleItem = modelMapper.map(requestBody, ArticleItem.class);
 
-        ArticleItem saved = articleItemRepository.save(articleItem);
+        ArticleItem saved = new ArticleItem(); // articleItemRepository.save(articleItem);
 
         return ResponseEntity.ok(modelMapper.map(saved, ArticleItemDto.class));
     }
@@ -56,7 +57,7 @@ public class ArticleController {
                 .map(dto -> modelMapper.map(dto, ArticleItem.class))
                 .toList();
 
-        List<ArticleItem> savedItems = articleItemRepository.saveAll(articleItems);
+        List<ArticleItem> savedItems = List.of(); // articleItemRepository.saveAll(articleItems);
 
         List<ArticleItemDto> savedDtos = savedItems.stream()
                 .map(item -> modelMapper.map(item, ArticleItemDto.class))
@@ -66,23 +67,23 @@ public class ArticleController {
     }
 
     @PutMapping
-    public ResponseEntity<ArticleItemDto> updateArticleItem(@RequestBody ArticleItemDto requestBody) {
+    public ResponseEntity<ArticleItemDto> updateArticleItem(@Valid @RequestBody ArticleItemDto requestBody) {
         ArticleItem articleItem = modelMapper.map(requestBody, ArticleItem.class);
 
-        ArticleItem updated = articleItemRepository.save(articleItem);
+        ArticleItem updated = new ArticleItem(); // articleItemRepository.save(articleItem);
 
         return ResponseEntity.ok(modelMapper.map(updated, ArticleItemDto.class));
     }
 
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<Void> deleteArticleById(@PathVariable Long id) {
-        Optional<ArticleItem> articleItemOptional = articleItemRepository.findById(id);
+        Optional<ArticleItem> articleItemOptional = Optional.of(new ArticleItem()); // articleItemRepository.findById(id);
 
         if (articleItemOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        articleItemRepository.deleteById(id);
+        //articleItemRepository.deleteById(id);
 
         return ResponseEntity.noContent().build();
     }

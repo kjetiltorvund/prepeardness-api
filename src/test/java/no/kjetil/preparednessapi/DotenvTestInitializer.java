@@ -9,6 +9,9 @@ import org.springframework.core.env.MutablePropertySources;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * ApplicationContextInitializer to load environment variables from a .env file for testing purposes.
+ */
 public class DotenvTestInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     @Override
     public void initialize(ConfigurableApplicationContext ctx) {

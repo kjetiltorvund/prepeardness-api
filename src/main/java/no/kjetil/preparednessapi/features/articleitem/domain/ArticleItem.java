@@ -1,6 +1,5 @@
 package no.kjetil.preparednessapi.features.articleitem.domain;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,13 +9,13 @@ import java.util.Date;
 
 @Data
 @Builder
-@Entity
-@Table(name = "article_items")
+/*@Entity
+@Table(name = "article_items")*/
 @NoArgsConstructor
 @AllArgsConstructor
 public class ArticleItem {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    /*@Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)*/
     private long id;
 
     private String articleName;
