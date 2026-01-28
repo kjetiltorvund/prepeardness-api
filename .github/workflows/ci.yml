@@ -23,8 +23,8 @@ jobs:
 
       - name: Build with Maven
         env:
-          MAIL_PASSWORD: { { secrets.MAIL_PASSWORD } }
-          SUPABASE_PUB_API_KEY: { { secrets.SUPABASE_PUB_API_KEY } }
-          SUPABASE_SECRET_API_KEY: { { secrets.SUPABASE_SECRET_API_KEY } }
-          SUPABASE_URL: { { vars.SUPABASE_URL } }
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          SUPABASE_PUB_API_KEY: ${{ secrets.SUPABASE_PUB_API_KEY }}
+          SUPABASE_SECRET_API_KEY: ${{ secrets.SUPABASE_SECRET_API_KEY }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
         run: mvn clean package
