@@ -4,10 +4,12 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,5 +23,8 @@ jobs:
 
       - name: Build with Maven
         env:
-          EMAIL_PASSWORD: "test"
+          MAIL_PASSWORD: { { secrets.MAIL_PASSWORD } }
+          SUPABASE_PUB_API_KEY: { { secrets.SUPABASE_PUB_API_KEY } }
+          SUPABASE_SECRET_API_KEY: { { secrets.SUPABASE_SECRET_API_KEY } }
+          SUPABASE_URL: { { vars.SUPABASE_URL } }
         run: mvn clean package
