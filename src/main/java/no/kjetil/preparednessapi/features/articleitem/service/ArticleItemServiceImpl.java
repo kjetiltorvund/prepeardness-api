@@ -63,6 +63,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             // Assuming the response is a JSON array and we want the first item
             body = body.substring(1, body.length() - 1); // Remove the surrounding
             ArticleItemDto dto = objectMapper.readValue(body, ArticleItemDto.class);
+            logger.info("Received ArticleItemDto: {}", dto);
             return modelMapper.map(dto, ArticleItem.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
