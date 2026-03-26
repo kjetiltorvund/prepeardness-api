@@ -18,6 +18,7 @@ import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 
 @Disabled
@@ -74,7 +75,8 @@ class ArticleItemRepositoryTest extends PostgreSqlIntegrationSetup {
                 .placement("Kjøleskapet")
                 .build();
 
-        //repository.save(articleItem);
+        ArticleItem savedArticleItem = repository.save(articleItem);
+        assertNotNull(savedArticleItem, "Saved article should not be null");
 
         // Act
         Date date = Instant.now().toDate();

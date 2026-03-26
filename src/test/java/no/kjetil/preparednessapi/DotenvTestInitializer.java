@@ -1,10 +1,12 @@
 package no.kjetil.preparednessapi;
 
 import io.github.cdimascio.dotenv.Dotenv;
+
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.MutablePropertySources;
+import org.springframework.lang.NonNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,7 +16,8 @@ import java.util.Map;
  */
 public class DotenvTestInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
     @Override
-    public void initialize(ConfigurableApplicationContext ctx) {
+    public void initialize(@NonNull ConfigurableApplicationContext ctx) {
+
         Dotenv dotenv = Dotenv.configure()
                 .filename(".env")
                 .ignoreIfMissing()

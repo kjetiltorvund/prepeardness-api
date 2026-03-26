@@ -7,7 +7,7 @@ FROM openjdk:25-rc-jdk-slim-trixie
 
 ARG APPLICATION_USER=spring
 
-RUN addgroup --system $APPLICATION_USER && adduser --system --ingroup $APPLICATION_USER $APPLICATION_USER
+RUN groupadd -r $APPLICATION_USER && useradd -r -g $APPLICATION_USER $APPLICATION_USER
 
 WORKDIR /app
 
