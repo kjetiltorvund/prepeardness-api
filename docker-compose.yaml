@@ -1,11 +1,11 @@
 version: '3.8'
 
-name: "prepeardness-api"
+name: "prepeardness-api-v1"
 
 services:
   app:
-    image: ghcr.io/kjetilminde/prepeardness-api:latest
-    container_name: prepeardness-api
+    image: kjetilminde/prepeardness-api:0.1.1
+    container_name: app
     restart: unless-stopped
     ports:
       - "8080:8080"

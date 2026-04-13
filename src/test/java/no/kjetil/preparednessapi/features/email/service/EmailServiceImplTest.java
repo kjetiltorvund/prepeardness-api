@@ -24,7 +24,9 @@ class EmailServiceImplTest {
     @Test
     public void shouldSendEmailToRecipient() {
 
-        EmailService emailService = new EmailServiceImpl(username, password);
+        EmailProperties emailProperties = new EmailProperties(username, password);
+
+        EmailService emailService = new EmailServiceImpl(emailProperties);
 
         Assertions.assertDoesNotThrow(() -> {
             emailService.sendEmail("kjetiltorvund@gmail.com", "Testing", "Testing");

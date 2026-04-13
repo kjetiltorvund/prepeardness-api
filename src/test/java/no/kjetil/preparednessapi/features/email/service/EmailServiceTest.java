@@ -37,8 +37,10 @@ public class EmailServiceTest {
         //         e.printStackTrace();
         //     }
         // }
+
+        EmailProperties emailProperties = new EmailProperties(username, password);
         
-        emailService = new EmailServiceImpl(username, password);
+        emailService = new EmailServiceImpl(emailProperties);
         
     }
 

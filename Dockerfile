@@ -13,6 +13,6 @@ WORKDIR /app
 
 USER spring:spring
 
-COPY --from=build /app/target/prepeardness-api*.jar .
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-CMD ["java", "-jar", "prepeardness-api.jar"]
+CMD ["java", "-jar", "app.jar"]

@@ -1,6 +1,6 @@
 # Deployment Scripts
 
-Dette katalogen inneholder scripts for å sette opp og deploye applikasjonen til Kamatera VPS.
+Denne katalogen inneholder scripts for å sette opp og deploye applikasjonen til Kamatera VPS.
 
 ## Scripts
 

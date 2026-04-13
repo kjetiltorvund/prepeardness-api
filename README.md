@@ -11,3 +11,10 @@ port: The server port
 context-path: The context path of the application
 
 Documentation can be available in yaml format as well, on the following path : /v3/api-docs.yaml
+
+# HTTPS with Let's Encrypt
+
+docker compose run --rm certbot certonly \
+  --webroot -w /var/www/certbot \
+  -d 45-248-37-116.cloud-xip.com \
+  --email kjetiltorvund@gmail.com --agree-tos --no-eff-email

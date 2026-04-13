@@ -4,7 +4,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
-import no.kjetil.preparednessapi.features.articleitem.repositories.ArticleItemRepository;
+import no.kjetil.preparednessapi.features.articleitem.service.ArticleItemService;
 import no.kjetil.preparednessapi.features.email.service.EmailService;
 
 import java.time.LocalDateTime;
@@ -17,17 +17,17 @@ import java.util.stream.Collectors;
 
 @Component
 public class CheckExpirationDatesJob {
-    private final ArticleItemRepository articleItemRepository;
+    private final ArticleItemService articleItemService;
     private final EmailService emailService;
     
-    public CheckExpirationDatesJob(ArticleItemRepository articleItemRepository, EmailService emailService) {
-        this.articleItemRepository = articleItemRepository;
+    public CheckExpirationDatesJob(ArticleItemService articleItemService, EmailService emailService) {
+        this.articleItemService = articleItemService;
         this.emailService = emailService;
     }
     
     @Scheduled(cron = "0 0 * * * *")
     public void checkIfAnythingIsExpired() {
-        List<ArticleItem> expiredArticles = articleItemRepository.findAllByDatePassedExpirationDate(new Date(LocalDateTime.now().toInstant(ZoneOffset.UTC).getEpochSecond()));
+        List<ArticleItem> expiredArticles = articleItemService.findAllByDatePassedExpirationDate(new Date(LocalDateTime.now().toInstant(ZoneOffset.UTC).getEpochSecond()));
         
         List<String> expiredItems = new ArrayList<>();
         
@@ -43,7 +43,7 @@ public class CheckExpirationDatesJob {
         int amountOfDaysToExpiration = 3;
         Date inTheFuture = Date.from(LocalDateTime.now().plusDays(amountOfDaysToExpiration).atZone(ZoneId.systemDefault()).toInstant());
         
-        List<ArticleItem> soonToBeExpiredArticles = articleItemRepository.findAllByDatePassedExpirationDate(inTheFuture);
+        List<ArticleItem> soonToBeExpiredArticles = articleItemService.findAllByDatePassedExpirationDate(inTheFuture);
         
         List<String> expiredItems = new ArrayList<>();
         

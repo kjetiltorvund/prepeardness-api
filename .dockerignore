@@ -1,0 +1,6 @@
+certbot/
+nginx/
+docker-compose.yml
+*.log
+.git
+.gitignore

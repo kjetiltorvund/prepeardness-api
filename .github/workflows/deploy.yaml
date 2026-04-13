@@ -1,0 +1,41 @@
+name: Deploy Prepeardness API to Kamatera
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Lar deg manuelt starte pipelinen
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.9 # Eller din ønskede versjon
+
+      - name: Install dependencies
+        run: |
+          pip install -r pulumi/requirements.txt
+
+      - name: Configure Pulumi
+        env:
+          PULUMI_ACCESS_KEY: ${{ secrets.PULUMI_ACCESS_KEY }}
+          PULUMI_API_TOKEN: ${{ secrets.PULUMI_API_TOKEN }}
+        run: |
+          pulumi config set -r kamatera.region "${{ env.REGION }}" # Bruk miljøvariabel for region
+          pulumi config set -r kamatera.api_key "${{ secrets.PULUMI_ACCESS_KEY }}"
+
+      - name: Deploy Infrastructure (Pulumi)
+        env:
+          PULUMI_ACCESS_KEY: ${{ secrets.PULUMI_ACCESS_KEY }}
+          PULUMI_API_TOKEN: ${{ secrets.PULUMI_API_TOKEN }}
+        run: |
+          pulumi up --stack=dev
+
+      - name: Post-Deployment Steps (Optional)
+        # Her kan du legge til steg for å kjøre tester, oppdatere Docker images, etc.

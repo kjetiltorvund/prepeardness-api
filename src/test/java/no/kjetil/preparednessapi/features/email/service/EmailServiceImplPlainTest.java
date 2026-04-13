@@ -15,7 +15,9 @@ public class EmailServiceImplPlainTest {
         String username = DotenvLoader.getOrDefault("GMAIL_USERNAME", "fallback@example.com");
         String password = DotenvLoader.getOrDefault("GMAIL_SMTP_APP_PASSWORD", "dummy");
 
-        EmailService emailService = new EmailServiceImpl(username, password);
+EmailProperties emailProperties = new EmailProperties(username, password);
+
+        EmailService emailService = new EmailServiceImpl(emailProperties);
 
         assertDoesNotThrow(() -> emailService.sendEmail("kjetiltorvund@gmail.com", "Testing", "Testing"));
     }

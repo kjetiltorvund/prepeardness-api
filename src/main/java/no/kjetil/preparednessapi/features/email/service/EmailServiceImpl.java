@@ -17,9 +17,9 @@ public class EmailServiceImpl implements EmailService {
     private final String username;
     private final String password;
 
-    public EmailServiceImpl(@Value("${mail.username}") String username, @Value("${mail.password}") String password) {
-        this.username = username;
-        this.password = password;
+    public EmailServiceImpl(EmailProperties properties) {
+        this.username = properties.getUsername();
+        this.password = properties.getPassword();
     }
 
     @Override

@@ -3,8 +3,11 @@ package no.kjetil.preparednessapi.features.articleitem.controller;
 import jakarta.validation.Valid;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
-import no.kjetil.preparednessapi.features.articleitem.repositories.ArticleItemRepository;
+import no.kjetil.preparednessapi.features.articleitem.service.ArticleItemService;
+
 import org.modelmapper.ModelMapper;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
@@ -17,25 +20,25 @@ import java.util.stream.Collectors;
 @RequestMapping(path = "/articles", headers = "API-Version=v1")
 public class ArticleController {
 
-    private final ArticleItemRepository articleItemRepository;
+    private final ArticleItemService articleItemService;
 
     private final ModelMapper modelMapper;
 
 
-    public ArticleController(ArticleItemRepository articleItemRepository, ModelMapper modelMapper) {
-        this.articleItemRepository = articleItemRepository;
+    public ArticleController(ArticleItemService articleItemService, ModelMapper modelMapper) {
+        this.articleItemService = articleItemService;
         this.modelMapper = modelMapper;
     }
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ArticleItemDto> getArticleById(@PathVariable @NonNull Long id) {
-        ArticleItemDto itemDto = convertToDto(articleItemRepository.findById(id).orElse(new ArticleItem()));
+        ArticleItemDto itemDto = convertToDto(articleItemService.findById(id).orElse(new ArticleItem()));
         return ResponseEntity.ok(itemDto);
     }
 
     @GetMapping
     public ResponseEntity<List<ArticleItemDto>> getAll() {
-        List<ArticleItem> items = articleItemRepository.findAll();
+        List<ArticleItem> items = articleItemService.findAll();
 
         List<ArticleItemDto> articleItemDtos = items.stream()
                 .map(this::convertToDto)
@@ -44,15 +47,15 @@ public class ArticleController {
     }
 
     @PostMapping
-    public ResponseEntity<ArticleItemDto> createArticleItem(@Valid @RequestBody ArticleItemDto requestBody) {
+    public ResponseEntity<HttpStatus> createArticleItem(@Valid @RequestBody ArticleItemDto requestBody) {
         ArticleItem articleItem = modelMapper.map(requestBody, ArticleItem.class);
 
         if(articleItem == null) {
             return ResponseEntity.badRequest().build();
         }
-        ArticleItem saved = articleItemRepository.save(articleItem);
+        articleItemService.save(articleItem);
 
-        return ResponseEntity.ok(modelMapper.map(saved, ArticleItemDto.class));
+        return ResponseEntity.ok(HttpStatus.CREATED);
     }
 
     @PostMapping(path = "/batch")
@@ -65,7 +68,7 @@ public class ArticleController {
             return ResponseEntity.badRequest().build();
         }
 
-        List<ArticleItem> savedItems = articleItemRepository.saveAll(articleItems);
+        List<ArticleItem> savedItems = articleItemService.saveAll(articleItems);
 
         List<ArticleItemDto> savedDtos = savedItems.stream()
                 .map(item -> modelMapper.map(item, ArticleItemDto.class))
@@ -82,20 +85,22 @@ public class ArticleController {
             return ResponseEntity.badRequest().build();
         }
 
-        ArticleItem updated = articleItemRepository.save(articleItem);
+        articleItemService.save(articleItem);
+
+        ArticleItemDto updated = modelMapper.map(articleItemService.findById(articleItem.getId()), ArticleItemDto.class);
 
         return ResponseEntity.ok(modelMapper.map(updated, ArticleItemDto.class));
     }
 
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<Void> deleteArticleById(@PathVariable @NonNull Long id) {
-        Optional<ArticleItem> articleItemOptional = articleItemRepository.findById(id);
+        Optional<ArticleItem> articleItemOptional = articleItemService.findById(id);
 
         if (articleItemOptional.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        articleItemRepository.deleteById(id);
+        articleItemService.deleteById(id);
 
         return ResponseEntity.noContent().build();
     }
