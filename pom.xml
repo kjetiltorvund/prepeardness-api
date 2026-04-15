@@ -27,6 +27,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <java.version>21</java.version>
         <junit-jupiter.version>5.14.0</junit-jupiter.version>
+        <argLine/><!-- needed for Mockito Java agent -->
     </properties>
 
     <dependencies>
@@ -362,6 +363,24 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                </configuration>
             </plugin>
         </plugins>
 

@@ -9,13 +9,9 @@ import java.util.Date;
 
 @Data
 @Builder
-//@Entity
-//@Table(name = "article_items")
 @NoArgsConstructor
 @AllArgsConstructor
 public class ArticleItem {
-    //@Id
-    //@GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
     private String articleName;
