@@ -2,6 +2,9 @@ package no.kjetil.preparednessapi.utils;
 
 import io.github.cdimascio.dotenv.Dotenv;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,6 +21,13 @@ public class DotenvLoader {
 
         synchronized (DotenvLoader.class) {
             if(loaded) return;
+
+            Path dotenvPath = Paths.get(".env");
+
+            if (!Files.isRegularFile(dotenvPath)) {
+                return;
+            }
+
             Dotenv dotenv = Dotenv.configure()
                     .filename(".env")
                     .ignoreIfMissing()
