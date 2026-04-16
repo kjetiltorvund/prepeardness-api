@@ -25,6 +25,16 @@ jobs:
       - name: Install Maven (for act compatibility)
         run: sudo apt-get update && sudo apt-get install -y maven
 
+      - name: Validate required environment variables
+        env:
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          SUPABASE_SECRET_API_KEY: ${{ secrets.SUPABASE_SECRET_API_KEY }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+        run: |
+          [ -n "$MAIL_PASSWORD" ] || { echo "MAIL_PASSWORD is missing"; exit 1; }
+          [ -n "$SUPABASE_SECRET_API_KEY" ] || { echo "SUPABASE_SECRET_API_KEY is missing"; exit 1; }
+          [ -n "$SUPABASE_URL" ] || { echo "SUPABASE_URL is missing"; exit 1; }
+
       - name: Build with Maven
         env:
           # secrets
