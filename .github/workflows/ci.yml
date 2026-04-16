@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-java:
     runs-on: ubuntu-latest
     environment: dev
     steps:
@@ -42,5 +42,6 @@ jobs:
           SUPABASE_PUB_API_KEY: ${{ secrets.SUPABASE_PUB_API_KEY }}
           SUPABASE_SECRET_API_KEY: ${{ secrets.SUPABASE_SECRET_API_KEY }}
           # variable
+          MAIL_USERNAME: ${{ vars.MAIL_USERNAME }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
         run: mvn clean package
