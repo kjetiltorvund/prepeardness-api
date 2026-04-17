@@ -2,7 +2,6 @@ package no.kjetil.preparednessapi.features.articleitem.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import no.kjetil.preparednessapi.DotenvTestInitializer;
 import no.kjetil.preparednessapi.config.JacksonConfig;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
@@ -11,7 +10,6 @@ import no.kjetil.preparednessapi.utils.DotenvLoader;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -28,7 +26,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@ContextConfiguration(initializers = DotenvTestInitializer.class)
 class ArticleItemServiceImplTest {
 
     @BeforeAll
@@ -39,8 +36,8 @@ class ArticleItemServiceImplTest {
     public void shouldGetArticleItemById() {
         // Arrange
         ArticleItemService articleItemService = new ArticleItemServiceImpl(
-        getOptions(), 
-        HttpClient.newHttpClient(),
+                getOptions(),
+                HttpClient.newHttpClient(),
                 new ModelMapper(),
                 new JacksonConfig().objectMapper());
 
@@ -52,18 +49,20 @@ class ArticleItemServiceImplTest {
     }
 
     private ArticleItemServiceProperties getOptions() {
-        ArticleItemServiceProperties options = new ArticleItemServiceProperties(
-            DotenvLoader.get("SUPABASE_URL"), 
-            DotenvLoader.get("SUPABASE_SECRET_API_KEY"));
-        return options;
+        String supabaseUrlParameterName = "SUPABASE_URL";
+        String supabaseSecretApiKeyParameterName = "SUPABASE_SECRET_API_KEY";
+        return new ArticleItemServiceProperties(
+                DotenvLoader.getOrDefault(supabaseUrlParameterName, System.getenv(supabaseUrlParameterName)),
+                DotenvLoader.getOrDefault(supabaseSecretApiKeyParameterName, System.getenv(supabaseSecretApiKeyParameterName))
+        );
     }
 
     @Test
     public void shouldPostToCreateArticleItem() {
         // Arrange
         ArticleItemService articleItemService = new ArticleItemServiceImpl(
-        getOptions(), 
-        HttpClient.newHttpClient(),
+                getOptions(),
+                HttpClient.newHttpClient(),
                 new ModelMapper(),
                 new JacksonConfig().objectMapper());
 
@@ -78,11 +77,11 @@ class ArticleItemServiceImplTest {
 
     private ArticleItem getNewArticleItem() {
         return ArticleItem.builder()
-        .active(true)
-        .articleName("Pepperonini")
-        .placement("Loftet")
-        .expirationDate(Date.from(Instant.now()))
-        .build();
+                .active(true)
+                .articleName("Pepperonini")
+                .placement("Loftet")
+                .expirationDate(Date.from(Instant.now()))
+                .build();
     }
 
     @Test
@@ -153,5 +152,4 @@ class ArticleItemServiceImplTest {
         verify(objectMapper, never()).readValue(any(String.class), any(TypeReference.class));
         verify(modelMapper, never()).map(any(ArticleItemDto.class), eq(ArticleItem.class));
     }
-
 }
