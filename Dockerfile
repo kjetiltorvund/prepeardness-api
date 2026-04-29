@@ -3,7 +3,7 @@ WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
 
-FROM openjdk:25-rc-jdk-slim-trixie
+FROM openjdk:26-rc-jdk-slim-trixie
 
 ARG APPLICATION_USER=spring
 
