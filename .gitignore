@@ -38,3 +38,5 @@ target
 
 .secrets
 .vars
+
+certbot/conf/accounts/
