@@ -1,18 +1,17 @@
-FROM maven:3.9.6-eclipse-temurin-21-alpine AS build
-WORKDIR /app
-COPY . .
-RUN mvn clean package -DskipTests
+FROM eclipse-temurin:21-jre-alpine
 
-FROM openjdk:25-rc-jdk-slim-trixie
-
-ARG APPLICATION_USER=spring
-
-RUN groupadd -r $APPLICATION_USER && useradd -r -g $APPLICATION_USER $APPLICATION_USER
+# Sikkerhet: Lag en ikke-root-bruker
+RUN addgroup -S spring && adduser -S spring -G spring
 
 WORKDIR /app
 
-USER spring:spring
+# Kopier filen som actions/download-artifact la i target-mappen
+COPY target/*.jar app.jar
 
-COPY --from=build /app/target/*.jar app.jar
+# Gi 'spring'-brukeren eierskap til filene
+RUN chown -R spring:spring /app
+
+USER spring
+
 EXPOSE 8080
 CMD ["java", "-jar", "app.jar"]
