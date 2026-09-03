@@ -23,9 +23,8 @@ context-path: The context path of the application
 
 Documentation can be available in yaml format as well, on the following path : /v3/api-docs.yaml
 
-# HTTPS with Let's Encrypt
+# Deployment
 
-docker compose run --rm certbot certonly \
-  --webroot -w /var/www/certbot \
-  -d 45-248-37-116.cloud-xip.com \
-  --email kjetiltorvund@gmail.com --agree-tos --no-eff-email
+Produksjonsmiljøet på Kamatera bruker Docker Compose, Nginx, Let's Encrypt og
+uforanderlige GHCR-images. Se [deployment-guiden](docs/DEPLOYMENT.md) for første
+VPS-oppsett, GitHub-secrets, deployment og rollback.

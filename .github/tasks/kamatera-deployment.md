@@ -1,87 +1,23 @@
-# Kamatera VPS Deployment - Implementation Tasks
+# Kamatera deployment status
 
-## VPS Information
-- **Host:** 45-248-37-116.cloud-xip.com (45.248.37.116)
-- **OS:** Ubuntu 24.04
-- **User:** root
-- **Application:** prepeardness-api (Spring Boot 3.5.8, Java 21)
-- **Database:** External Supabase PostgreSQL
-- **Registry:** GitHub Container Registry (ghcr.io)
+Repository implementation is complete for the following production design:
 
-## Implementation Checklist
+- Ubuntu 24.04 bootstrap with Docker, UFW, fail2ban and Certbot
+- dedicated `deploy` account and key-based SSH
+- one GitHub Actions workflow for test, image publication and deployment
+- immutable `sha-<commit>` GHCR images
+- Docker-health verification and last-known-good rollback
+- Nginx HTTPS proxy with automatic certificate renewal
+- public health endpoint only; Swagger and other Actuator endpoints denied
 
-### Phase 1: VPS Setup
-- [ ] 1. Run VPS setup script (`scripts/vps-setup.sh`) on server
-  - [ ] Install Docker Engine
-  - [ ] Install Docker Compose
-  - [ ] Configure UFW firewall (ports 22, 80, 443)
-  - [ ] Set up SSH key-based authentication
-  - [ ] Create deployment directory `/opt/prepeardness-api/`
-  - [ ] Install necessary tools (git, curl)
+Remaining operator actions:
 
-### Phase 2: GitHub Configuration
-- [ ] 2. Add GitHub Secrets to repository
-  - [ ] VPS_SSH_KEY (private SSH key for deployment)
-  - [ ] VPS_HOST (45-248-37-116.cloud-xip.com)
-  - [ ] VPS_USER (root)
-  - [ ] DATABASE_PASSWORD
-  - [ ] MAIL_PASSWORD
-  - [ ] SUPABASE_URL
-  - [ ] SUPABASE_SECRET_API_KEY
-  - [ ] Verify GITHUB_TOKEN (automatic)
-
-### Phase 3: Repository Updates
-- [ ] 3. Update docker-compose.yaml with ghcr.io image path
-- [ ] 4. Verify nginx configuration for reverse proxy
-- [ ] 5. Commit and push deployment scripts and workflow
-
-### Phase 4: Initial Deployment
-- [ ] 6. Generate and configure SSH key pair for GitHub Actions
-- [ ] 7. Test GitHub Actions workflow on feature branch
-- [ ] 8. Deploy initial version to VPS
-- [ ] 9. Configure nginx on VPS
-- [ ] 10. Set up SSL certificate (Let's Encrypt)
-
-### Phase 5: Verification
-- [ ] 11. Verify application health endpoint
-- [ ] 12. Test full deployment pipeline (push to main)
-- [ ] 13. Verify zero-downtime deployment
-- [ ] 14. Test rollback procedure
-
-## Notes
-
-### SSH Key Setup
-```bash
-# On local machine
-ssh-keygen -t ed25519 -C "github-actions@prepeardness-api" -f ~/.ssh/kamatera_deploy
-# Add public key to VPS: ~/.ssh/authorized_keys
-# Add private key to GitHub Secrets as VPS_SSH_KEY
-```
-
-### Manual Deployment (if needed)
-```bash
-ssh root@45-248-37-116.cloud-xip.com
-cd /opt/prepeardness-api
-./deploy.sh
-```
-
-### Health Check Endpoint
-- URL: http://45-248-37-116.cloud-xip.com/actuator/health
-- Expected: HTTP 200 with `{"status":"UP"}`
-
-### Rollback Procedure
-If deployment fails, the deployment script automatically reverts to the previous version.
-
-Manual rollback:
-```bash
-docker-compose down
-docker tag ghcr.io/kjetilminde/prepeardness-api:previous ghcr.io/kjetilminde/prepeardness-api:latest
-docker-compose up -d
-```
-
-## Completion Criteria
-- [ ] Application accessible via HTTP/HTTPS
-- [ ] Automated deployment on push to main
-- [ ] Health checks passing
-- [ ] Zero-downtime deployment verified
-- [ ] Rollback procedure tested
+- [ ] Generate the GitHub Actions deployment key.
+- [ ] Run `scripts/vps-setup.sh` as root with `CERTBOT_EMAIL` and `DEPLOY_PUBLIC_KEY`.
+- [ ] Verify SSH and Docker access as `deploy`.
+- [ ] Disable password and root SSH login using `docs/DEPLOYMENT.md`.
+- [ ] Create and protect the GitHub `production` environment.
+- [ ] Add every secret listed in `docs/DEPLOYMENT.md`.
+- [ ] Run the workflow and verify the acceptance checks.
+- [ ] Run `certbot renew --dry-run` on the VPS.
+- [ ] Exercise rollback once with an intentionally unhealthy test image.

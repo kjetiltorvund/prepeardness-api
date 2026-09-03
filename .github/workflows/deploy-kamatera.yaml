@@ -1,244 +1,227 @@
-name: Deploy to Kamatera VPS
+name: Build and deploy to Kamatera
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: production-kamatera
+  cancel-in-progress: false
+
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-  JAVA_VERSION: '21'
+  IMAGE_REPOSITORY: ghcr.io/${{ github.repository }}
+  IMAGE_TAG: sha-${{ github.sha }}
+  JAVA_VERSION: "21"
+  PRODUCTION_URL: https://45-248-37-116.cloud-xip.com
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  build-test-push:
+    name: Test, build, and publish
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: 'temurin'
-          cache: 'maven'
-      
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
-        env:
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-          SUPABASE_PUB_API_KEY: ${{ secrets.SUPABASE_PUB_API_KEY }}
-          SUPABASE_SECRET_API_KEY: ${{ secrets.SUPABASE_SECRET_API_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      
-      - name: Run tests
-        run: mvn test
-        env:
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-          SUPABASE_PUB_API_KEY: ${{ secrets.SUPABASE_PUB_API_KEY }}
-          SUPABASE_SECRET_API_KEY: ${{ secrets.SUPABASE_SECRET_API_KEY }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: application-jar
-          path: target/*.jar
-          retention-days: 1
-
-  build-and-push-image:
-    name: Build and Push Docker Image
-    runs-on: ubuntu-latest
-    needs: build-and-test
     permissions:
       contents: read
       packages: write
-    outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-    
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
-          name: application-jar
-          path: target/
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Log in to GitHub Container Registry
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Run tests and package
+        env:
+          MAIL_USERNAME: ci@example.invalid
+          MAIL_PASSWORD: ci-placeholder
+          SUPABASE_URL: https://example.invalid
+          SUPABASE_SECRET_API_KEY: ci-placeholder
+          SUPABASE_PUB_API_KEY: ci-placeholder
+          SEND_GRID_API_KEY: ci-placeholder
+        run: mvn --batch-mode clean verify
+
+      - name: Build image
+        run: docker build --tag "${IMAGE_REPOSITORY}:${IMAGE_TAG}" .
+
+      - name: Smoke-test container health
+        env:
+          MAIL_USERNAME: ci@example.invalid
+          MAIL_PASSWORD: ci-placeholder
+          SUPABASE_URL: https://example.invalid
+          SUPABASE_SECRET_API_KEY: ci-placeholder
+          SEND_GRID_API_KEY: ci-placeholder
+        run: |
+          set -euo pipefail
+          docker run --detach --name preparedness-smoke \
+            --env MAIL_USERNAME --env MAIL_PASSWORD \
+            --env SUPABASE_URL --env SUPABASE_SECRET_API_KEY \
+            --env SEND_GRID_API_KEY \
+            "${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+          trap 'docker logs preparedness-smoke; docker rm --force preparedness-smoke' EXIT
+          for attempt in $(seq 1 45); do
+            status="$(docker inspect --format '{{.State.Health.Status}}' preparedness-smoke)"
+            if [[ "$status" == "healthy" ]]; then exit 0; fi
+            if [[ "$status" == "unhealthy" ]]; then exit 1; fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Validate Compose configuration
+        env:
+          DATABASE_URL: jdbc:postgresql://db.example.invalid:5432/postgres?sslmode=require
+          DATABASE_PASSWORD: ci-placeholder
+          MAIL_USERNAME: ci@example.invalid
+          MAIL_PASSWORD: ci-placeholder
+          SUPABASE_URL: https://example.invalid
+          SUPABASE_SECRET_API_KEY: ci-placeholder
+        run: docker compose config --quiet
+
+      - name: Validate Nginx configuration
+        run: |
+          set -euo pipefail
+          certificate_dir="${RUNNER_TEMP}/letsencrypt/live/45-248-37-116.cloud-xip.com"
+          mkdir -p "$certificate_dir" "${RUNNER_TEMP}/certbot"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj '/CN=45-248-37-116.cloud-xip.com' \
+            -keyout "${certificate_dir}/privkey.pem" \
+            -out "${certificate_dir}/fullchain.pem" >/dev/null 2>&1
+          docker run --rm \
+            -v "${PWD}/nginx/conf.d:/etc/nginx/conf.d:ro" \
+            -v "${RUNNER_TEMP}/letsencrypt:/etc/letsencrypt:ro" \
+            -v "${RUNNER_TEMP}/certbot:/var/www/certbot:ro" \
+            nginx:1.27-alpine nginx -t
+
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=sha,prefix={{branch}}-,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
-      
-      - name: Build and push Docker image
-        id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-      
-      - name: Image digest
-        run: echo "✓ Image pushed with digest ${{ steps.build.outputs.digest }}"
+
+      - name: Publish immutable image
+        run: docker push "${IMAGE_REPOSITORY}:${IMAGE_TAG}"
 
   deploy:
-    name: Deploy to VPS
+    name: Deploy production
+    needs: build-test-push
     runs-on: ubuntu-latest
-    needs: build-and-push-image
     environment:
       name: production
-      url: http://45-248-37-116.cloud-xip.com
-    
+      url: https://45-248-37-116.cloud-xip.com
+    permissions:
+      contents: read
+      packages: read
     steps:
-      - name: Checkout code
+      - name: Check out deployment files
         uses: actions/checkout@v4
-      
-      - name: Set up SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
-      
-      - name: Copy deployment files to VPS
-        run: |
-          scp -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            docker-compose.yaml \
-            scripts/deploy.sh \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/prepeardness-api/
-          
-          # Copy nginx configuration
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "mkdir -p /opt/prepeardness-api/nginx/conf.d"
-          
-          scp -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            nginx/conf.d/app.conf \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/prepeardness-api/nginx/conf.d/
-          
-          # Make deploy script executable
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "chmod +x /opt/prepeardness-api/deploy.sh"
-      
-      - name: Update environment variables on VPS
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
-          
-          cd /opt/prepeardness-api
-          
-          cat > .env << EOF
-          SPRING_PROFILES_ACTIVE=prod
-          SERVER_PORT=8080
-          
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          DATABASE_USERNAME=postgres
-          DATABASE_PASSWORD=${{ secrets.DATABASE_PASSWORD }}
-          
-          MAIL_HOST=smtp.gmail.com
-          MAIL_PORT=587
-          MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}
-          MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}
-          
-          SUPABASE_URL=${{ secrets.SUPABASE_URL }}
-          SUPABASE_SECRET_API_KEY=${{ secrets.SUPABASE_SECRET_API_KEY }}
-          
-          LOGGING_LEVEL_ROOT=INFO
-          LOGGING_LEVEL_COM_BEREDSKAP=DEBUG
-          EOF
-          
-          chmod 600 .env
-          
-          ENDSSH
-      
-      - name: Deploy application
-        run: |
-          ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << ENDSSH
-          
-          cd /opt/prepeardness-api
-          
-          export IMAGE_NAME="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
-          export IMAGE_TAG="latest"
-          export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          export GITHUB_ACTOR="${{ github.actor }}"
-          
-          ./deploy.sh
-          
-          ENDSSH
-      
-      - name: Verify deployment
-        run: |
-          echo "Waiting for application to be ready..."
-          sleep 10
-          
-          MAX_RETRIES=15
-          RETRY_DELAY=4
-          
-          for i in $(seq 1 $MAX_RETRIES); do
-            if curl -sf http://${{ secrets.VPS_HOST }}/actuator/health > /dev/null 2>&1; then
-              echo "✓ Health check passed"
-              curl -s http://${{ secrets.VPS_HOST }}/actuator/health
-              exit 0
-            else
-              echo "Health check attempt $i/$MAX_RETRIES failed, retrying in ${RETRY_DELAY}s..."
-              sleep $RETRY_DELAY
-            fi
-          done
-          
-          echo "❌ Health check failed after $MAX_RETRIES attempts"
-          exit 1
-      
-      - name: Cleanup SSH key
-        if: always()
-        run: rm -f ~/.ssh/deploy_key
 
-  notify:
-    name: Notify Deployment Status
-    runs-on: ubuntu-latest
-    needs: deploy
-    if: always()
-    
-    steps:
-      - name: Deployment Success
-        if: needs.deploy.result == 'success'
+      - name: Configure SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
-          echo "🚀 Deployment successful!"
-          echo "Application URL: http://45-248-37-116.cloud-xip.com"
-          echo "Health: http://45-248-37-116.cloud-xip.com/actuator/health"
-          echo "Swagger UI: http://45-248-37-116.cloud-xip.com/swagger-ui.html"
-      
-      - name: Deployment Failed
-        if: needs.deploy.result != 'success'
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          install -m 600 /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Create production environment file
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_API_KEY: ${{ secrets.SUPABASE_SECRET_API_KEY }}
+          SEND_GRID_API_KEY: ${{ secrets.SEND_GRID_API_KEY }}
         run: |
-          echo "❌ Deployment failed"
-          exit 1
+          set -euo pipefail
+          output="${RUNNER_TEMP}/production.env"
+          : > "$output"
+          chmod 600 "$output"
+          write_value() {
+            local name="$1" value="$2"
+            if [[ -z "$value" || "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
+              printf 'Invalid or missing production value: %s\n' "$name" >&2
+              exit 1
+            fi
+            value="${value//\'/\\\'}"
+            printf "%s='%s'\n" "$name" "$value" >> "$output"
+          }
+          printf '%s\n' \
+            'SPRING_PROFILES_ACTIVE=prod' \
+            'SERVER_PORT=8080' \
+            'DATABASE_USERNAME=postgres' \
+            'MAIL_HOST=smtp.gmail.com' \
+            'MAIL_PORT=587' \
+            'LOGGING_LEVEL_ROOT=INFO' \
+            'LOGGING_LEVEL_COM_BEREDSKAP=INFO' >> "$output"
+          write_value DATABASE_URL "$DATABASE_URL"
+          write_value DATABASE_PASSWORD "$DATABASE_PASSWORD"
+          write_value MAIL_USERNAME "$MAIL_USERNAME"
+          write_value MAIL_PASSWORD "$MAIL_PASSWORD"
+          write_value SUPABASE_URL "$SUPABASE_URL"
+          write_value SUPABASE_SECRET_API_KEY "$SUPABASE_SECRET_API_KEY"
+          write_value SEND_GRID_API_KEY "$SEND_GRID_API_KEY"
+
+      - name: Copy deployment files
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          ssh_options=(-i ~/.ssh/deploy_key -o BatchMode=yes)
+          scp "${ssh_options[@]}" docker-compose.yaml scripts/deploy.sh \
+            "${VPS_USER}@${VPS_HOST}:/opt/prepeardness-api/"
+          scp "${ssh_options[@]}" nginx/conf.d/app.conf \
+            "${VPS_USER}@${VPS_HOST}:/opt/prepeardness-api/nginx/conf.d/app.conf"
+          scp "${ssh_options[@]}" "${RUNNER_TEMP}/production.env" \
+            "${VPS_USER}@${VPS_HOST}:/opt/prepeardness-api/.env.upload"
+          ssh "${ssh_options[@]}" "${VPS_USER}@${VPS_HOST}" \
+            'install -m 600 /opt/prepeardness-api/.env.upload /opt/prepeardness-api/.env && rm /opt/prepeardness-api/.env.upload && chmod +x /opt/prepeardness-api/deploy.sh'
+
+      - name: Authenticate VPS to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/deploy_key -o BatchMode=yes \
+            "${VPS_USER}@${VPS_HOST}" "docker login ghcr.io --username '${GITHUB_ACTOR}' --password-stdin"
+
+      - name: Deploy immutable image
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "${VPS_USER}@${VPS_HOST}" \
+            "IMAGE_REPOSITORY='${IMAGE_REPOSITORY}' IMAGE_TAG='${IMAGE_TAG}' /opt/prepeardness-api/deploy.sh"
+
+      - name: Verify public surface
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 20); do
+            if response="$(curl --fail --silent --show-error "${PRODUCTION_URL}/actuator/health")" \
+              && [[ "$response" == *'"status":"UP"'* ]]; then
+              break
+            fi
+            if [[ "$attempt" -eq 20 ]]; then exit 1; fi
+            sleep 3
+          done
+          [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' "${PRODUCTION_URL}/swagger-ui.html")" == "404" ]]
+          [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' "${PRODUCTION_URL}/actuator/info")" == "404" ]]
+          [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' http://45-248-37-116.cloud-xip.com/)" == "301" ]]
+          if curl --silent --fail --connect-timeout 3 http://45.248.37.116:8080/ >/dev/null; then
+            echo 'Port 8080 is publicly reachable' >&2
+            exit 1
+          fi
+
+      - name: Remove local deployment credentials
+        if: always()
+        run: rm -f ~/.ssh/deploy_key "${RUNNER_TEMP}/production.env"

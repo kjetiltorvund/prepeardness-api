@@ -1,305 +1,157 @@
-# Kamatera VPS Deployment Guide
+# Produksjonssetting på Kamatera
 
-Dette dokumentet beskriver hvordan man setter opp og deployer Preparedness API til en Kamatera VPS.
+Applikasjonen kjører som en Spring Boot-container bak Nginx på Ubuntu 24.04. GitHub Actions tester applikasjonen, publiserer et uforanderlig image til GHCR og setter dette imaget i produksjon.
 
-## Oversikt
+## Produksjonsmiljø
 
-- **VPS:** 45-248-37-116.cloud-xip.com (45.248.37.116)
-- **OS:** Ubuntu 24.04
-- **Applikasjon:** Spring Boot 3.5.8 med Java 21
-- **Database:** Ekstern Supabase PostgreSQL
-- **Registry:** GitHub Container Registry (ghcr.io)
-- **Deployment:** Automatisk ved push til main branch
+- Vert: `45-248-37-116.cloud-xip.com` (`45.248.37.116`)
+- URL: `https://45-248-37-116.cloud-xip.com`
+- VPS-katalog: `/opt/prepeardness-api`
+- SSH-bruker for deployment: `deploy`
+- Database: ekstern Supabase PostgreSQL med TLS
+- Offentlig driftssjekk: `GET /actuator/health`
 
-## Forutsetninger
+Port 8080 er ikke eksponert fra VPS-en. Swagger og øvrige Actuator-endepunkter returnerer 404 gjennom Nginx.
 
-- Root-tilgang til VPS
-- GitHub repository med riktige tilganger
-- Supabase database konfigurert
-- Gmail-konto for e-post (eller annen SMTP)
+## 1. Opprett deployment-nøkkel
 
-## Oppsett (Første gang)
-
-### 1. Kjør VPS-oppsettscriptet
-
-Logg inn på VPS og kjør setup-scriptet:
-
-```bash
-ssh root@45-248-37-116.cloud-xip.com
-cd /tmp
-curl -o vps-setup.sh https://raw.githubusercontent.com/kjetilminde/prepeardness-api/main/scripts/vps-setup.sh
-chmod +x vps-setup.sh
-sudo ./vps-setup.sh
-```
-
-Dette installerer:
-- Docker Engine og Docker Compose
-- UFW firewall (porter 22, 80, 443)
-- fail2ban for SSH-beskyttelse
-- Deployment-katalog i `/opt/prepeardness-api/`
-
-### 2. Generer SSH-nøkler for GitHub Actions
-
-På din lokale maskin:
+Kjør lokalt:
 
 ```bash
 ssh-keygen -t ed25519 -C "github-actions@prepeardness-api" -f ~/.ssh/kamatera_deploy
 ```
 
-Legg til den offentlige nøkkelen på VPS:
+Ta vare på privatnøkkelen. Den offentlige nøkkelen brukes ved bootstrap.
+
+## 2. Bootstrap VPS-en
+
+Logg inn som root via Kamatera-konsollen eller SSH, last ned `scripts/vps-setup.sh`, og kjør:
 
 ```bash
-ssh root@45-248-37-116.cloud-xip.com "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys" < ~/.ssh/kamatera_deploy.pub
+export CERTBOT_EMAIL="kjetiltorvund@gmail.com"
+export DEPLOY_PUBLIC_KEY="ssh-ed25519 AAAA... github-actions@prepeardness-api"
+bash /tmp/vps-setup.sh
 ```
 
-### 3. Konfigurer GitHub Secrets
+Scriptet krever Ubuntu 24.04 og gjør følgende:
 
-Naviger til repository settings → Secrets and variables → Actions, og legg til:
+- oppdaterer operativsystemet
+- installerer Docker Engine, Compose, Certbot, UFW og fail2ban
+- oppretter brukeren `deploy` og `/opt/prepeardness-api`
+- åpner bare SSH, HTTP og HTTPS
+- henter første Let's Encrypt-sertifikat med webroot
+- aktiverer automatisk sertifikatfornyelse og Nginx-reload
 
-| Secret Name | Description | Example |
-|------------|-------------|---------|
-| `VPS_SSH_KEY` | Private SSH-nøkkel | Innhold av `~/.ssh/kamatera_deploy` |
-| `VPS_HOST` | VPS hostname | `45-248-37-116.cloud-xip.com` |
-| `VPS_USER` | SSH-bruker | `root` |
-| `DATABASE_URL` | PostgreSQL connection string | `jdbc:postgresql://db.xxx.supabase.co:5432/postgres?sslmode=require` |
-| `DATABASE_PASSWORD` | Database passord | `***` |
-| `MAIL_USERNAME` | Gmail-adresse | `kjetiltorvund@gmail.com` |
-| `MAIL_PASSWORD` | Gmail app password | `***` |
-| `SUPABASE_URL` | Supabase project URL | `https://xxx.supabase.co` |
-| `SUPABASE_SECRET_API_KEY` | Supabase secret key | `***` |
+DNS-navnet må peke til VPS-en, og port 80 må være tilgjengelig før scriptet kjøres.
 
-**Merk:** `GITHUB_TOKEN` er automatisk tilgjengelig og brukes for å autentisere med ghcr.io.
+## 3. Verifiser og sikre SSH
 
-### 4. Oppdater .env på VPS
-
-SSH til VPS og rediger `.env`-filen:
+Test deployment-brukeren i en ny terminal før root-tilgang endres:
 
 ```bash
-ssh root@45-248-37-116.cloud-xip.com
+ssh -i ~/.ssh/kamatera_deploy deploy@45-248-37-116.cloud-xip.com
+docker version
+```
+
+Når dette virker, opprett `/etc/ssh/sshd_config.d/99-production-hardening.conf` som root:
+
+```text
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+```
+
+Valider og last SSH på nytt uten å lukke den eksisterende root-økten:
+
+```bash
+sshd -t
+systemctl reload ssh
+```
+
+Test deretter en ny `deploy`-innlogging. Kamatera-konsollen beholdes som gjenopprettingskanal. Medlemskap i Docker-gruppen gir i praksis root-lignende tilgang og skal bare gis til deployment-brukeren.
+
+## 4. Konfigurer GitHub Environment
+
+Opprett miljøet `production` under repository settings. Legg eventuelt på nødvendig godkjenning og beskyttelsesregler.
+
+Følgende environment secrets er påkrevd:
+
+| Navn | Verdi |
+| --- | --- |
+| `VPS_HOST` | `45-248-37-116.cloud-xip.com` |
+| `VPS_USER` | `deploy` |
+| `VPS_SSH_KEY` | Hele privatnøkkelen fra `~/.ssh/kamatera_deploy` |
+| `VPS_KNOWN_HOSTS` | Verifisert known-hosts-linje for VPS-ens SSH-vertsnøkkel |
+| `DATABASE_URL` | JDBC-URL med `sslmode=require` |
+| `DATABASE_PASSWORD` | Supabase-databasepassord |
+| `MAIL_USERNAME` | SMTP-brukernavn |
+| `MAIL_PASSWORD` | SMTP-app-passord |
+| `SUPABASE_URL` | Supabase-prosjektets HTTPS-URL |
+| `SUPABASE_SECRET_API_KEY` | Hemmelig Supabase-nøkkel |
+| `SEND_GRID_API_KEY` | SendGrid-nøkkel som applikasjonen forventer |
+
+Hent verts-ID fra en betrodd kanal, for eksempel Kamatera-konsollen:
+
+```bash
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub
+```
+
+Sammenlign fingeravtrykket med resultatet fra lokal `ssh-keyscan`, og lagre den verifiserte linjen som `VPS_KNOWN_HOSTS`. Ikke bruk `StrictHostKeyChecking=no`.
+
+GitHubs `GITHUB_TOKEN` opprettes automatisk. Workflowen bruker den til å publisere og hente samme repositories GHCR-image.
+
+## 5. Første deployment
+
+Push til `main`, eller kjør workflowen **Build and deploy to Kamatera** manuelt. Pipeline gjør følgende:
+
+1. kjører `mvn clean verify`
+2. bygger og helsetester containeren
+3. validerer Compose-konfigurasjonen
+4. publiserer `ghcr.io/kjetiltorvund/prepeardness-api:sha-<commit>`
+5. overfører Compose-, Nginx- og miljøfilene uten å skrive hemmeligheter til loggen
+6. gjenskaper applikasjonscontaineren og venter på Docker-health
+7. validerer Nginx og HTTPS-endepunktet
+8. kontrollerer at Swagger, øvrig Actuator og port 8080 ikke er offentlige
+
+Produksjonsjobber serialiseres, slik at to releaser ikke endrer VPS-en samtidig.
+
+## Rollback og manuell drift
+
+`deploy.sh` lagrer image-referansen i `.last-good-image` først etter en vellykket deployment. Hvis neste image ikke blir friskt, gjenskapes applikasjonen automatisk med forrige image og workflowen markeres som feilet.
+
+Manuell deployment av et bestemt, allerede publisert image:
+
+```bash
+ssh deploy@45-248-37-116.cloud-xip.com
+IMAGE_REPOSITORY=ghcr.io/kjetiltorvund/prepeardness-api \
+IMAGE_TAG=sha-<full-commit-sha> \
+/opt/prepeardness-api/deploy.sh
+```
+
+Nyttige kontroller:
+
+```bash
 cd /opt/prepeardness-api
-nano .env
+docker compose --env-file .env --env-file .deployment.env ps
+docker compose --env-file .env --env-file .deployment.env logs --tail=100 app
+curl --fail https://45-248-37-116.cloud-xip.com/actuator/health
 ```
 
-Fyll inn alle verdier (samme som GitHub Secrets).
-
-### 5. Deploy første versjon
-
-Push kode til main branch eller kjør workflow manuelt:
+Test sertifikatfornyelse etter første deployment:
 
 ```bash
-git push origin main
+sudo certbot renew --dry-run
+systemctl status certbot.timer
 ```
 
-Eller i GitHub: Actions → Deploy to Kamatera VPS → Run workflow
-
-## Deployment-prosess
-
-### Automatisk deployment
-
-Når du pusher til `main` branch:
-
-1. **Build and Test:**
-   - Kompilerer med Maven
-   - Kjører tester
-   - Laster opp JAR som artifact
-
-2. **Build and Push Image:**
-   - Bygger Docker image
-   - Pusher til ghcr.io med tags `latest` og `main-SHA`
-   - Cacher layers for raskere builds
-
-3. **Deploy:**
-   - Kopierer `docker-compose.yaml` og `deploy.sh` til VPS
-   - Oppdaterer `.env` med secrets
-   - Kjører deployment-script
-   - Verifiserer health endpoint
-
-4. **Verify:**
-   - Sjekker at applikasjonen svarer
-   - Bekrefter health status
-
-### Manuell deployment
-
-Hvis du trenger å deploye manuelt:
+## Akseptansekontroller
 
 ```bash
-ssh root@45-248-37-116.cloud-xip.com
-cd /opt/prepeardness-api
-./deploy.sh
+curl --fail https://45-248-37-116.cloud-xip.com/actuator/health
+curl -I http://45-248-37-116.cloud-xip.com/
+curl -I https://45-248-37-116.cloud-xip.com/swagger-ui.html
+curl -I https://45-248-37-116.cloud-xip.com/actuator/info
 ```
 
-## Zero-downtime deployment
-
-Deployment-scriptet sikrer zero-downtime ved å:
-
-1. Beholde gammel container kjørende
-2. Starte ny container
-3. Vente på health check
-4. Stoppe gammel container ved suksess
-5. Rulle tilbake ved feil
-
-## Rollback
-
-### Automatisk rollback
-
-Hvis health check feiler, ruller deployment-scriptet automatisk tilbake til forrige versjon.
-
-### Manuell rollback
-
-```bash
-ssh root@45-248-37-116.cloud-xip.com
-cd /opt/prepeardness-api
-
-# Stopp nåværende versjon
-docker compose down
-
-# Tag forrige versjon som latest
-docker tag ghcr.io/kjetilminde/prepeardness-api:previous ghcr.io/kjetilminde/prepeardness-api:latest
-
-# Start forrige versjon
-docker compose up -d
-```
-
-## SSL/HTTPS Oppsett
-
-For å aktivere HTTPS med Let's Encrypt:
-
-```bash
-ssh root@45-248-37-116.cloud-xip.com
-cd /opt/prepeardness-api
-
-# Installer certbot
-apt-get install -y certbot
-
-# Generer sertifikat
-certbot certonly --standalone -d 45-248-37-116.cloud-xip.com \
-  --email kjetiltorvund@gmail.com --agree-tos --no-eff-email
-
-# Kopier sertifikater til nginx-mappen
-mkdir -p nginx/ssl
-cp /etc/letsencrypt/live/45-248-37-116.cloud-xip.com/fullchain.pem nginx/ssl/cert.pem
-cp /etc/letsencrypt/live/45-248-37-116.cloud-xip.com/privkey.pem nginx/ssl/key.pem
-
-# Oppdater nginx-konfigurasjon (fjern kommentarer fra HTTPS-server)
-nano nginx/conf.d/app.conf
-
-# Restart nginx
-docker compose restart nginx
-```
-
-## Overvåking og logging
-
-### Se applikasjonslogger
-
-```bash
-ssh root@45-248-37-116.cloud-xip.com
-cd /opt/prepeardness-api
-
-# Live logs
-docker compose logs -f app
-
-# Siste 100 linjer
-docker compose logs --tail=100 app
-```
-
-### Health check
-
-```bash
-curl http://45-248-37-116.cloud-xip.com/actuator/health
-```
-
-Forventet respons:
-```json
-{
-  "status": "UP"
-}
-```
-
-### Container status
-
-```bash
-docker compose ps
-```
-
-## Feilsøking
-
-### Applikasjonen starter ikke
-
-```bash
-# Sjekk logger
-docker compose logs app
-
-# Sjekk miljøvariabler
-docker compose exec app env | grep -i spring
-
-# Test database-tilkobling
-docker compose exec app curl -f localhost:8080/actuator/health
-```
-
-### Deployment feiler
-
-```bash
-# Sjekk GitHub Actions logs
-# Actions → Deploy to Kamatera VPS → [latest run]
-
-# Sjekk VPS deployment logs
-ssh root@45-248-37-116.cloud-xip.com
-cd /opt/prepeardness-api
-docker compose logs --tail=100
-```
-
-### Kan ikke nå applikasjonen
-
-```bash
-# Sjekk firewall
-sudo ufw status
-
-# Sjekk nginx
-docker compose logs nginx
-
-# Test direkte mot app (fra VPS)
-curl http://localhost:8080/actuator/health
-```
-
-## Vedlikehold
-
-### Oppdater Docker images
-
-```bash
-ssh root@45-248-37-116.cloud-xip.com
-docker system prune -a -f
-```
-
-### Backup
-
-Database er hostet eksternt (Supabase), så ingen backup nødvendig på VPS.
-
-For å ta backup av konfigurasjon:
-
-```bash
-ssh root@45-248-37-116.cloud-xip.com
-tar -czf /tmp/prepeardness-config-$(date +%Y%m%d).tar.gz \
-  /opt/prepeardness-api/.env \
-  /opt/prepeardness-api/nginx/conf.d/
-```
-
-### Oppdater VPS-programvare
-
-```bash
-ssh root@45-248-37-116.cloud-xip.com
-apt-get update && apt-get upgrade -y
-# Restart om nødvendig
-```
-
-## Sikkerhet
-
-- SSH nøkkelbasert autentisering (passord deaktivert)
-- fail2ban aktivert for SSH-beskyttelse
-- UFW firewall med kun nødvendige porter åpne
-- Database kjører eksternt (ikke eksponert)
-- Miljøvariabler lagres sikkert i GitHub Secrets
-- Docker images signert og verifisert
-
-## Kontakt
-
-For problemer eller spørsmål, kontakt team-lead eller opprett en issue i GitHub repository.
+Forvent henholdsvis HTTP 200 med `UP`, HTTP 301 og HTTP 404 for de to siste kallene.

@@ -19,16 +19,16 @@ public abstract class PostgreSqlIntegrationSetup {
     static PostgreSQLContainer postgres = new PostgreSQLContainer(DockerImageName.parse("postgres:16.11-alpine"))
             .withDatabaseName("preparednessdb");
 
-    @BeforeAll
-    static void beforeAll() {
-        postgres.start();
-        assertThat(postgres.isRunning(), is(true));
-    }
+    // @BeforeAll
+    // static void beforeAll() {
+    //     postgres.start();
+    //     assertThat(postgres.isRunning(), is(true));
+    // }
 
-    @AfterAll
-    static void afterAll() {
-        postgres.stop();
-    }
+    // @AfterAll
+    // static void afterAll() {
+    //     postgres.stop();
+    // }
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {

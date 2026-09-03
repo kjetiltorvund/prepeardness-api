@@ -6,8 +6,6 @@ import no.kjetil.preparednessapi.config.JacksonConfig;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
-import no.kjetil.preparednessapi.utils.DotenvLoader;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
 
@@ -16,7 +14,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Optional;
 
 import static java.net.http.HttpResponse.BodyHandler;
 import static org.hamcrest.CoreMatchers.is;
@@ -28,51 +25,53 @@ import static org.mockito.Mockito.*;
 
 class ArticleItemServiceImplTest {
 
-    @BeforeAll
-    public static void setup() {
-    }
-
     @Test
-    public void shouldGetArticleItemById() {
-        // Arrange
+    public void shouldGetArticleItemById() throws Exception {
+        HttpClient httpClient = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("[{\"id\":4,\"article_name\":\"Pepperonini\",\"placement\":\"Loftet\"}]");
+        when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenReturn(response);
+
         ArticleItemService articleItemService = new ArticleItemServiceImpl(
                 getOptions(),
-                HttpClient.newHttpClient(),
+                httpClient,
                 new ModelMapper(),
                 new JacksonConfig().objectMapper());
 
-        // Act
         ArticleItem articleItem = articleItemService.readArticleItemById(4);
 
-        // Assert
         assertNotNull(articleItem);
+        assertEquals(4, articleItem.getId());
+        verify(httpClient).send(any(HttpRequest.class), any(BodyHandler.class));
     }
 
     private ArticleItemServiceProperties getOptions() {
-        String supabaseUrlParameterName = "SUPABASE_URL";
-        String supabaseSecretApiKeyParameterName = "SUPABASE_SECRET_API_KEY";
-        return new ArticleItemServiceProperties(
-                DotenvLoader.getOrDefault(supabaseUrlParameterName, System.getenv(supabaseUrlParameterName)),
-                DotenvLoader.getOrDefault(supabaseSecretApiKeyParameterName, System.getenv(supabaseSecretApiKeyParameterName))
-        );
+        return new ArticleItemServiceProperties("https://example.invalid", "test-api-key");
     }
 
     @Test
-    public void shouldPostToCreateArticleItem() {
-        // Arrange
+    public void shouldPostToCreateArticleItem() throws Exception {
+        HttpClient httpClient = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(201);
+        when(response.body()).thenReturn("[{\"id\":7,\"article_name\":\"Pepperonini\",\"placement\":\"Loftet\",\"active\":true}]");
+        when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenReturn(response);
+
         ArticleItemService articleItemService = new ArticleItemServiceImpl(
                 getOptions(),
-                HttpClient.newHttpClient(),
+                httpClient,
                 new ModelMapper(),
                 new JacksonConfig().objectMapper());
 
         ArticleItem newArticleItem = getNewArticleItem();
-
-        // Act
         ArticleItem createdArticleItem = articleItemService.createArticleItem(newArticleItem);
 
-        // Assert
         assertNotNull(createdArticleItem);
+        assertEquals(7, createdArticleItem.getId());
+        verify(httpClient).send(any(HttpRequest.class), any(BodyHandler.class));
     }
 
     private ArticleItem getNewArticleItem() {
@@ -85,36 +84,31 @@ class ArticleItemServiceImplTest {
     }
 
     @Test
-    public void shouldUpdateExistingArticleItem() {
-        // Arrange
+    public void shouldUpdateExistingArticleItem() throws Exception {
+        HttpClient httpClient = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("[{\"id\":7,\"article_name\":\"Pepperonini\",\"placement\":\"New placement from test\",\"active\":true}]");
+        when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenReturn(response);
+
         ArticleItemService articleItemService = new ArticleItemServiceImpl(
                 getOptions(),
-                HttpClient.newHttpClient(),
+                httpClient,
                 new ModelMapper(),
                 new JacksonConfig().objectMapper()
         );
 
-        Optional<ArticleItem> hasExistingItem = articleItemService.findAll().stream().filter(p -> p.getArticleName().equals("Pepperonini")).findFirst();
-
-        if (hasExistingItem.isEmpty()) {
-            ArticleItem newItem = getNewArticleItem();
-
-            articleItemService.createArticleItem(newItem);
-
-            hasExistingItem = articleItemService.findAll().stream().filter(p -> p.getArticleName().equals("Pepperonini")).findFirst();
-        }
-
-        ArticleItem existingItem = hasExistingItem.orElse(null);
-
         String newPlacementFromTest = "New placement from test";
+        ArticleItem existingItem = getNewArticleItem();
+        existingItem.setId(7);
         existingItem.setPlacement(newPlacementFromTest);
 
-        // Act
         ArticleItem result = articleItemService.updateArticleItem(existingItem);
 
-        // Assert
         assertNotNull(result);
         assertThat(result.getPlacement(), is(newPlacementFromTest));
+        verify(httpClient).send(any(HttpRequest.class), any(BodyHandler.class));
     }
 
     @Test

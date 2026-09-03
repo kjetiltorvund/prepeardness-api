@@ -1,196 +1,139 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-# Deployment Script for Kamatera VPS
-# This script is executed by GitHub Actions to deploy the application
-# Location on VPS: /opt/prepeardness-api/deploy.sh
+DEPLOY_DIR="${DEPLOY_DIR:-/opt/prepeardness-api}"
+IMAGE_REPOSITORY="${IMAGE_REPOSITORY:-ghcr.io/kjetiltorvund/prepeardness-api}"
+IMAGE_TAG="${IMAGE_TAG:?IMAGE_TAG is required}"
+FULL_IMAGE="${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+STATE_FILE="${DEPLOY_DIR}/.last-good-image"
+DEPLOYMENT_ENV="${DEPLOY_DIR}/.deployment.env"
+MAX_HEALTH_RETRIES="${MAX_HEALTH_RETRIES:-45}"
+HEALTH_RETRY_DELAY="${HEALTH_RETRY_DELAY:-2}"
+DOMAIN="${DOMAIN:-45-248-37-116.cloud-xip.com}"
 
-DEPLOY_DIR="/opt/prepeardness-api"
-IMAGE_NAME="${IMAGE_NAME:-ghcr.io/kjetilminde/prepeardness-api}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
-FULL_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
-HEALTH_ENDPOINT="http://localhost:8080/actuator/health"
-MAX_HEALTH_RETRIES=30
-HEALTH_RETRY_DELAY=2
+info() { printf '[INFO] %s\n' "$1"; }
+error() { printf '[ERROR] %s\n' "$1" >&2; }
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+write_image_environment() {
+    local image_ref="$1"
+    local repository="${image_ref%:*}"
+    local tag="${image_ref##*:}"
+    local temporary_file
+    temporary_file="$(mktemp "${DEPLOY_DIR}/.deployment.env.XXXXXX")"
+    chmod 600 "$temporary_file"
+    printf 'IMAGE_REPOSITORY=%s\nIMAGE_TAG=%s\n' "$repository" "$tag" > "$temporary_file"
+    mv "$temporary_file" "$DEPLOYMENT_ENV"
 }
 
-warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+compose() {
+    docker compose --env-file .env --env-file "$DEPLOYMENT_ENV" "$@"
 }
 
-error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+wait_for_health() {
+    local container_id status attempt
+    container_id="$(compose ps -q app)"
+    if [[ -z "$container_id" ]]; then
+        error "Application container was not created"
+        return 1
+    fi
+
+    for attempt in $(seq 1 "$MAX_HEALTH_RETRIES"); do
+        status="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container_id" 2>/dev/null || true)"
+        case "$status" in
+            healthy)
+                info "Application is healthy"
+                return 0
+                ;;
+            unhealthy|exited|dead)
+                error "Application entered state: $status"
+                return 1
+                ;;
+        esac
+        sleep "$HEALTH_RETRY_DELAY"
+    done
+
+    error "Application did not become healthy before the timeout"
+    return 1
 }
 
-step() {
-    echo -e "${BLUE}[STEP]${NC} $1"
+deploy_image() {
+    local image_ref="$1"
+    write_image_environment "$image_ref"
+    compose pull app
+    compose up -d --no-deps --force-recreate app
+    wait_for_health
 }
 
-# Change to deployment directory
+restore_previous_image() {
+    if [[ -z "$previous_image" || "$previous_image" == "$FULL_IMAGE" ]]; then
+        error "No earlier known-good image is available"
+        return 1
+    fi
+
+    error "Restoring ${previous_image}"
+    deploy_image "$previous_image" || return 1
+    compose up -d --no-deps nginx || return 1
+    compose exec -T nginx nginx -s reload || return 1
+}
+
+verify_proxy() {
+    local attempt response
+    for attempt in $(seq 1 10); do
+        response="$(curl --silent --show-error --fail \
+            --noproxy '*' \
+            --resolve "${DOMAIN}:443:127.0.0.1" \
+            "https://${DOMAIN}/actuator/health" 2>/dev/null || true)"
+        if [[ "$response" == *'"status":"UP"'* ]]; then
+            return 0
+        fi
+        sleep 2
+    done
+    return 1
+}
+
 cd "$DEPLOY_DIR"
+umask 077
 
-info "=================================="
-info "Starting Deployment"
-info "=================================="
-info "Image: $FULL_IMAGE"
-info "Deploy directory: $DEPLOY_DIR"
-info "Time: $(date)"
-
-# Check if .env file exists
-if [[ ! -f .env ]]; then
-    error ".env file not found. Please create it with required environment variables."
+if [[ ! -s .env ]]; then
+    error "${DEPLOY_DIR}/.env is missing or empty"
     exit 1
 fi
 
-# Login to GitHub Container Registry
-step "Authenticating with GitHub Container Registry..."
-if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-    info "Successfully authenticated with ghcr.io"
-else
-    warn "GITHUB_TOKEN not provided, assuming already authenticated"
+previous_image=""
+if [[ -s "$STATE_FILE" ]]; then
+    previous_image="$(<"$STATE_FILE")"
 fi
 
-# Tag current image as 'previous' for rollback
-step "Creating backup tag for rollback..."
-if docker image inspect "$FULL_IMAGE" &> /dev/null; then
-    docker tag "$FULL_IMAGE" "${IMAGE_NAME}:previous" || warn "Failed to create backup tag"
-    info "Backup tag created: ${IMAGE_NAME}:previous"
-else
-    warn "Current image not found, skipping backup"
-fi
+info "Deploying immutable image ${FULL_IMAGE}"
+write_image_environment "$FULL_IMAGE"
+compose config --quiet
+compose pull nginx
+compose run --rm --no-deps nginx nginx -t
 
-# Pull the latest image
-step "Pulling latest Docker image..."
-if ! docker pull "$FULL_IMAGE"; then
-    error "Failed to pull Docker image: $FULL_IMAGE"
-    exit 1
-fi
-info "Successfully pulled $FULL_IMAGE"
-
-# Pull other required images
-step "Pulling nginx image..."
-docker compose pull nginx || warn "Failed to pull nginx image"
-
-# Get current container ID for health check comparison
-CURRENT_CONTAINER=$(docker compose ps -q app 2>/dev/null || echo "")
-
-# Perform zero-downtime deployment
-step "Deploying application (zero-downtime)..."
-if ! docker compose up -d --no-deps --build app; then
-    error "Failed to start new container"
-    step "Attempting rollback..."
-    if docker tag "${IMAGE_NAME}:previous" "$FULL_IMAGE" 2>/dev/null; then
-        docker compose up -d --no-deps app
-        error "Deployment failed, rolled back to previous version"
+if ! deploy_image "$FULL_IMAGE"; then
+    compose logs --tail=100 app || true
+    if restore_previous_image; then
+        error "Rollback succeeded; the requested deployment remains failed"
     else
-        error "Rollback failed - no previous version available"
+        error "Rollback also failed; manual intervention is required"
     fi
     exit 1
 fi
-info "New container started"
 
-# Wait for application to be healthy
-step "Waiting for application health check..."
-HEALTH_CHECK_PASSED=false
-for i in $(seq 1 $MAX_HEALTH_RETRIES); do
-    sleep $HEALTH_RETRY_DELAY
-    
-    # Check if container is still running
-    if ! docker compose ps | grep -q "app.*running"; then
-        error "Container stopped unexpectedly"
-        docker compose logs --tail=50 app
-        break
-    fi
-    
-    # Check health endpoint
-    if curl -sf "$HEALTH_ENDPOINT" > /dev/null 2>&1; then
-        HEALTH_CHECK_PASSED=true
-        info "Health check passed (attempt $i/$MAX_HEALTH_RETRIES)"
-        break
+if ! compose up -d --no-deps nginx \
+    || ! compose exec -T nginx nginx -t \
+    || ! compose exec -T nginx nginx -s reload \
+    || ! verify_proxy; then
+    compose logs --tail=100 nginx || true
+    if restore_previous_image && verify_proxy; then
+        error "Proxy verification failed; rollback succeeded"
     else
-        if [[ $i -eq $MAX_HEALTH_RETRIES ]]; then
-            error "Health check failed after $MAX_HEALTH_RETRIES attempts"
-        else
-            echo -n "."
-        fi
+        error "Proxy verification failed and rollback requires manual intervention"
     fi
-done
-
-# If health check failed, rollback
-if [[ "$HEALTH_CHECK_PASSED" != "true" ]]; then
-    error "Deployment health check failed"
-    step "Attempting rollback..."
-    
-    # Show logs before rollback
-    echo ""
-    error "Application logs:"
-    docker compose logs --tail=100 app
-    echo ""
-    
-    # Rollback
-    if docker tag "${IMAGE_NAME}:previous" "$FULL_IMAGE" 2>/dev/null; then
-        docker compose up -d --no-deps app
-        sleep 5
-        
-        # Verify rollback health
-        if curl -sf "$HEALTH_ENDPOINT" > /dev/null 2>&1; then
-            warn "Rolled back to previous version successfully"
-            exit 1
-        else
-            error "Rollback health check also failed - manual intervention required"
-            exit 1
-        fi
-    else
-        error "Rollback failed - no previous version available"
-        exit 1
-    fi
+    exit 1
 fi
 
-# Ensure nginx is running
-step "Ensuring nginx is running..."
-docker compose up -d nginx
-info "nginx proxy is running"
-
-# Clean up old images to save space
-step "Cleaning up old images..."
-docker image prune -f --filter "label=org.opencontainers.image.source" || warn "Image cleanup failed"
-
-# Show running containers
-step "Deployment summary:"
-docker compose ps
-
-# Show application logs (last 20 lines)
-echo ""
-info "Recent application logs:"
-docker compose logs --tail=20 app
-
-# Final health check
-echo ""
-step "Final health verification..."
-HEALTH_RESPONSE=$(curl -s "$HEALTH_ENDPOINT" || echo "{}")
-echo "$HEALTH_RESPONSE" | grep -q '"status":"UP"' && \
-    info "✓ Application is healthy" || \
-    warn "⚠ Health status unclear: $HEALTH_RESPONSE"
-
-# Success
-echo ""
-info "=================================="
-info "✓ Deployment completed successfully"
-info "=================================="
-info "Image: $FULL_IMAGE"
-info "Time: $(date)"
-info "Health endpoint: http://45-248-37-116.cloud-xip.com/actuator/health"
-echo ""
-
-exit 0
+printf '%s\n' "$FULL_IMAGE" > "$STATE_FILE"
+compose ps
+docker image prune -f >/dev/null
+info "Deployment completed successfully"

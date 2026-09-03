@@ -1,78 +1,55 @@
-version: '3.8'
-
-name: "prepeardness-api-v1"
+name: prepeardness-api-v1
 
 services:
   app:
-    image: kjetilminde/prepeardness-api:0.1.1
-    container_name: app
+    image: "${IMAGE_REPOSITORY:?IMAGE_REPOSITORY is required}:${IMAGE_TAG:?IMAGE_TAG is required}"
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     environment:
-      # Spring Configuration
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
-      - SERVER_PORT=${SERVER_PORT:-8080}
-      
-      # Database Configuration (External Supabase)
-      - SPRING_DATASOURCE_URL=${DATABASE_URL}
-      - SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME:-postgres}
-      - SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
-      
-      # Mail Configuration
-      - SPRING_MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
-      - SPRING_MAIL_PORT=${MAIL_PORT:-587}
-      - SPRING_MAIL_USERNAME=${MAIL_USERNAME}
-      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
-      
-      # Supabase Configuration
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_SECRET_API_KEY=${SUPABASE_SECRET_API_KEY}
-      
-      # Logging Configuration
-      - LOGGING_LEVEL_ROOT=${LOGGING_LEVEL_ROOT:-INFO}
-      - LOGGING_LEVEL_COM_BEREDSKAP=${LOGGING_LEVEL_COM_BEREDSKAP:-DEBUG}
-    
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      SPRING_DATASOURCE_URL: ${DATABASE_URL}
+      SPRING_DATASOURCE_USERNAME: ${DATABASE_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DATABASE_PASSWORD}
+      SPRING_MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SECRET_API_KEY: ${SUPABASE_SECRET_API_KEY}
+      SEND_GRID_API_KEY: ${SEND_GRID_API_KEY:-}
+      LOGGING_LEVEL_ROOT: ${LOGGING_LEVEL_ROOT:-INFO}
+      LOGGING_LEVEL_COM_BEREDSKAP: ${LOGGING_LEVEL_COM_BEREDSKAP:-INFO}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
       start_period: 60s
-    
+    mem_limit: 1g
+    cpus: 2.0
     networks:
       - web
-    
-    # Resource limits (optional, adjust based on VPS capacity)
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-  
+
   nginx:
-    image: nginx:alpine
-    container_name: nginx-proxy
+    image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "--no-check-certificate", "https://localhost/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - web
-    
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 networks:
   web:

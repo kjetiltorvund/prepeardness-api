@@ -1,161 +1,45 @@
-# Deployment Scripts
+# Deployment-script
 
-Denne katalogen inneholder scripts for å sette opp og deploye applikasjonen til Kamatera VPS.
+## `vps-setup.sh`
 
-## Scripts
+Kjøres én gang som root på en ren Ubuntu 24.04 VPS. Scriptet installerer driftsmiljøet, oppretter `deploy`-brukeren, konfigurerer nettverksbeskyttelse og henter første TLS-sertifikat.
 
-### vps-setup.sh
+Påkrevde variabler:
 
-Initialiserer VPS med alle nødvendige verktøy og konfigurasjon.
+- `CERTBOT_EMAIL`: kontaktadresse for Let's Encrypt
+- `DEPLOY_PUBLIC_KEY`: offentlig SSH-nøkkel for GitHub Actions
 
-**Kjør på VPS (første gang):**
+Valgfrie variabler:
+
+- `DOMAIN`, standard `45-248-37-116.cloud-xip.com`
+- `DEPLOY_USER`, standard `deploy`
+- `DEPLOY_DIR`, standard `/opt/prepeardness-api`
+
+Eksempel:
+
 ```bash
-ssh root@45-248-37-116.cloud-xip.com
-curl -o /tmp/vps-setup.sh https://raw.githubusercontent.com/kjetilminde/prepeardness-api/main/scripts/vps-setup.sh
-chmod +x /tmp/vps-setup.sh
-sudo /tmp/vps-setup.sh
+CERTBOT_EMAIL="admin@example.com" \
+DEPLOY_PUBLIC_KEY="ssh-ed25519 AAAA... github-actions@prepeardness-api" \
+bash vps-setup.sh
 ```
 
-**Hva scriptet gjør:**
-- Installerer Docker Engine og Docker Compose
-- Konfigurerer UFW firewall (porter 22, 80, 443)
-- Setter opp fail2ban for SSH-beskyttelse
-- Oppretter deployment-katalog `/opt/prepeardness-api/`
-- Lager template-filer for `.env` og nginx-konfigurasjon
+Scriptet deaktiverer ikke root-innlogging automatisk. Følg den verifiserte rekkefølgen i [deployment-guiden](../docs/DEPLOYMENT.md) for å unngå å låse serveren.
 
-**Forutsetninger:**
-- Ubuntu 24.04
-- Root-tilgang
+## `deploy.sh`
 
----
+Kjøres som `deploy` av GitHub Actions. Scriptet krever en ferdig `/opt/prepeardness-api/.env` og følgende variabler:
 
-### deploy.sh
+- `IMAGE_REPOSITORY`
+- `IMAGE_TAG`, alltid den uforanderlige `sha-<commit>`-taggen
 
-Kjører deployment av applikasjonen på VPS. Dette scriptet blir automatisk kjørt av GitHub Actions.
+Scriptet validerer Compose og Nginx, henter imaget, gjenskaper app-containeren og venter på Docker-health. Etter suksess oppdateres `.last-good-image`. Ved feil forsøkes automatisk rollback til verdien som allerede står i denne filen.
 
-**Manuell kjøring (på VPS):**
+Eksempel:
+
 ```bash
-ssh root@45-248-37-116.cloud-xip.com
-cd /opt/prepeardness-api
-./deploy.sh
+IMAGE_REPOSITORY=ghcr.io/kjetiltorvund/prepeardness-api \
+IMAGE_TAG=sha-<full-commit-sha> \
+/opt/prepeardness-api/deploy.sh
 ```
 
-**Hva scriptet gjør:**
-1. Autentiserer med GitHub Container Registry
-2. Tagger nåværende image som backup
-3. Puller nyeste Docker image
-4. Deployer med zero-downtime
-5. Verifiserer health check
-6. Ruller tilbake ved feil
-
-**Miljøvariabler:**
-- `IMAGE_NAME` - Docker image-navn (default: ghcr.io/kjetilminde/prepeardness-api)
-- `IMAGE_TAG` - Image tag (default: latest)
-- `GITHUB_TOKEN` - GitHub token for autentisering
-- `GITHUB_ACTOR` - GitHub brukernavnet
-
-**Exit codes:**
-- `0` - Deployment vellykket
-- `1` - Deployment feilet (rollback utført)
-
----
-
-## Bruk
-
-### Første gangs oppsett
-
-1. Kjør `vps-setup.sh` på VPS
-2. Konfigurer GitHub Secrets
-3. Oppdater `.env` på VPS med riktige verdier
-4. Push til main branch for å utløse deployment
-
-### Automatisk deployment
-
-GitHub Actions kjører automatisk `deploy.sh` ved push til main branch.
-
-### Manuell deployment
-
-Hvis automatisk deployment ikke fungerer:
-```bash
-ssh root@45-248-37-116.cloud-xip.com
-cd /opt/prepeardness-api
-export IMAGE_NAME="ghcr.io/kjetilminde/prepeardness-api"
-export IMAGE_TAG="latest"
-./deploy.sh
-```
-
----
-
-## Feilsøking
-
-### vps-setup.sh feiler
-
-**Problem:** Docker installasjon feiler
-```bash
-# Sjekk Ubuntu-versjonen
-lsb_release -a
-
-# Manuell Docker-installasjon
-apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io
-```
-
-**Problem:** Firewall blokkerer SSH
-```bash
-# Deaktiver UFW midlertidig
-ufw disable
-
-# Kjør scriptet på nytt
-./vps-setup.sh
-
-# UFW aktiveres automatisk av scriptet
-```
-
-### deploy.sh feiler
-
-**Problem:** Image pull feiler
-```bash
-# Logg inn manuelt til ghcr.io
-echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
-
-# Prøv å pulle manuelt
-docker pull ghcr.io/kjetilminde/prepeardness-api:latest
-```
-
-**Problem:** Health check timeout
-```bash
-# Sjekk container logs
-docker compose logs app
-
-# Sjekk om port 8080 er åpen
-netstat -tulpn | grep 8080
-
-# Test health endpoint direkte
-curl http://localhost:8080/actuator/health
-```
-
-**Problem:** Rollback feiler
-```bash
-# List tilgjengelige images
-docker images | grep prepeardness-api
-
-# Manuell rollback til spesifikk versjon
-docker tag ghcr.io/kjetilminde/prepeardness-api:main-abc1234 ghcr.io/kjetilminde/prepeardness-api:latest
-docker compose up -d
-```
-
----
-
-## Sikkerhet
-
-- Scripts må kjøres som root eller med sudo
-- SSH-nøkler brukes for autentisering (ingen passord)
-- Miljøvariabler med secrets lagres i `.env` med chmod 600
-- Docker images må signeres og verifiseres
-
----
-
-## Se også
-
-- [Deployment Guide](../docs/DEPLOYMENT.md) - Komplett deployment-dokumentasjon
-- [Task Tracking](../.github/tasks/kamatera-deployment.md) - Implementation checklist
+Se [deployment-guiden](../docs/DEPLOYMENT.md) for bootstrap, GitHub-secrets, SSH-herding og feilsøking.

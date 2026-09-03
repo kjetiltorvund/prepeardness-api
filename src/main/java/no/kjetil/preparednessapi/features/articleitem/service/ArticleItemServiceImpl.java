@@ -79,6 +79,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         return null;
     }
 
+    @SuppressWarnings("unused")
     private List<ArticleItem> findByArticleName(String articleName) {
         String uriPath = basePath + "?article_name=eq." + articleName;
 
@@ -265,10 +266,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             statusCode = HttpStatusCode.valueOf(response.statusCode());
 
-            if(response.statusCode() >= 200 && response.statusCode() < 300) {
-                String responseBody = response.body().toString();
-                ObjectMapper objectMapper = new ObjectMapper();
-                ArticleItemDto dto = objectMapper.readValue(responseBody, ArticleItemDto.class);
+            if(response.statusCode() >= 200 && response.statusCode() < 300) {                
                 return HttpStatusCode.valueOf(response.statusCode());
             } else {
                 logger.error("Failed to save ArticleItem. Status code: {}, Response body: {}", response.statusCode(), response.body());
@@ -280,9 +278,9 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-        } finally {
-            return statusCode;
         }
+
+        return statusCode;
     }
 
     private Optional<String> getBody(ArticleItem articleItem) {
