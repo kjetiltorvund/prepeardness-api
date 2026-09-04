@@ -25,12 +25,26 @@ Ta vare på privatnøkkelen. Den offentlige nøkkelen brukes ved bootstrap.
 
 ## 2. Bootstrap VPS-en
 
-Logg inn som root via Kamatera-konsollen eller SSH, last ned `scripts/vps-setup.sh`, og kjør:
+Logg inn som root via Kamatera-konsollen eller SSH og last ned `scripts/vps-setup.sh`. Les deretter inn innholdet fra den lokale `.pub`-filen før scriptet kjøres. Hvis scriptet kjøres direkte fra den lokale maskinen via SSH:
 
 ```bash
-export CERTBOT_EMAIL="kjetiltorvund@gmail.com"
-export DEPLOY_PUBLIC_KEY="ssh-ed25519 AAAA... github-actions@prepeardness-api"
-bash /tmp/vps-setup.sh
+DEPLOY_PUBLIC_KEY="$(cat ~/.ssh/kamatera_deploy.pub)"
+ssh root@45-248-37-116.cloud-xip.com \
+  "CERTBOT_EMAIL='kjetiltorvund@gmail.com' DEPLOY_PUBLIC_KEY='$DEPLOY_PUBLIC_KEY' bash /tmp/vps-setup.sh"
+```
+
+Alternativt kan hele innholdet fra `~/.ssh/kamatera_deploy.pub` kopieres manuelt inn som verdien til `DEPLOY_PUBLIC_KEY` i root-terminalen på VPS-en. Ikke bruk privatnøkkelen som denne verdien.
+
+Hvis bootstrap allerede er kjørt uten riktig nøkkel, installer den offentlige nøkkelen fra den lokale maskinen med:
+
+```bash
+ssh root@45-248-37-116.cloud-xip.com \
+  'install -d -m 700 -o deploy -g deploy /home/deploy/.ssh &&
+   touch /home/deploy/.ssh/authorized_keys &&
+   chown deploy:deploy /home/deploy/.ssh/authorized_keys &&
+   chmod 600 /home/deploy/.ssh/authorized_keys &&
+   cat >> /home/deploy/.ssh/authorized_keys' \
+  < ~/.ssh/kamatera_deploy.pub
 ```
 
 Scriptet krever Ubuntu 24.04 og gjør følgende:

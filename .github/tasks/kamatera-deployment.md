@@ -13,7 +13,7 @@ Repository implementation is complete for the following production design:
 Remaining operator actions:
 
 - [ ] Generate the GitHub Actions deployment key.
-- [ ] Run `scripts/vps-setup.sh` as root with `CERTBOT_EMAIL` and `DEPLOY_PUBLIC_KEY`.
+- [ ] Run `scripts/vps-setup.sh` as root with `CERTBOT_EMAIL` and the complete `.pub` file contents in `DEPLOY_PUBLIC_KEY`.
 - [ ] Verify SSH and Docker access as `deploy`.
 - [ ] Disable password and root SSH login using `docs/DEPLOYMENT.md`.
 - [ ] Create and protect the GitHub `production` environment.

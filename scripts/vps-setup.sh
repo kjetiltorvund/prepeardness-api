@@ -5,7 +5,7 @@ DEPLOY_USER="${DEPLOY_USER:-deploy}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/prepeardness-api}"
 DOMAIN="${DOMAIN:-45-248-37-116.cloud-xip.com}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:?Set CERTBOT_EMAIL before running this script}"
-DEPLOY_PUBLIC_KEY="${DEPLOY_PUBLIC_KEY:?Set DEPLOY_PUBLIC_KEY to the GitHub Actions SSH public key}"
+DEPLOY_PUBLIC_KEY="${DEPLOY_PUBLIC_KEY:?Set DEPLOY_PUBLIC_KEY to the complete contents of the generated .pub file}"
 
 info() { printf '[INFO] %s\n' "$1"; }
 

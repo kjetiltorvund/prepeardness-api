@@ -7,7 +7,7 @@ Kjøres én gang som root på en ren Ubuntu 24.04 VPS. Scriptet installerer drif
 Påkrevde variabler:
 
 - `CERTBOT_EMAIL`: kontaktadresse for Let's Encrypt
-- `DEPLOY_PUBLIC_KEY`: offentlig SSH-nøkkel for GitHub Actions
+- `DEPLOY_PUBLIC_KEY`: hele den ene linjen fra den genererte `kamatera_deploy.pub`-filen
 
 Valgfrie variabler:
 
@@ -18,9 +18,10 @@ Valgfrie variabler:
 Eksempel:
 
 ```bash
-CERTBOT_EMAIL="admin@example.com" \
-DEPLOY_PUBLIC_KEY="ssh-ed25519 AAAA... github-actions@prepeardness-api" \
-bash vps-setup.sh
+DEPLOY_PUBLIC_KEY="$(cat ~/.ssh/kamatera_deploy.pub)"
+CERTBOT_EMAIL="admin@example.com"
+ssh root@45-248-37-116.cloud-xip.com \
+  "CERTBOT_EMAIL='$CERTBOT_EMAIL' DEPLOY_PUBLIC_KEY='$DEPLOY_PUBLIC_KEY' bash /tmp/vps-setup.sh"
 ```
 
 Scriptet deaktiverer ikke root-innlogging automatisk. Følg den verifiserte rekkefølgen i [deployment-guiden](../docs/DEPLOYMENT.md) for å unngå å låse serveren.
