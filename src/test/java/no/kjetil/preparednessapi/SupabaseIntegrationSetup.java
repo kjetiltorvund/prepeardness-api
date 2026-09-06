@@ -21,19 +21,19 @@ public abstract class SupabaseIntegrationSetup {
 
 	@BeforeAll
 	static void beforeAll() throws Exception {
-		// Load DATABASE_URL from .env or environment
+		// Optional direct JDBC setup for local integration testing only.
 		String databaseUrl = DotenvLoader.getOrDefault("DATABASE_URL", System.getenv("DATABASE_URL"));
 		if (databaseUrl == null || databaseUrl.isBlank()) {
 			// nothing to test against; skip — but fail fast to make intent explicit
-			throw new IllegalStateException("DATABASE_URL not set for Supabase integration tests");
+			throw new IllegalStateException("DATABASE_URL not set for direct PostgreSQL integration tests");
 		}
 
 		// If already a JDBC url, use as-is
 		if (databaseUrl.startsWith("jdbc:")) {
 			jdbcUrl = databaseUrl;
 			// username/password may not be present; rely on properties from env if available
-			dbUser = System.getenv("DB_USER");
-			dbPassword = System.getenv("DB_PASSWORD");
+			dbUser = System.getenv("DATABASE_USERNAME");
+			dbPassword = System.getenv("DATABASE_PASSWORD");
 		} else {
 			// Parse postgres URI like: postgresql://user:pass@host:port/dbname
 			URI uri = new URI(databaseUrl);

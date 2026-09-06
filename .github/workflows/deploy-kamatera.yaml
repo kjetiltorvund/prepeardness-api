@@ -40,7 +40,6 @@ jobs:
           SUPABASE_URL: https://example.invalid
           SUPABASE_SECRET_API_KEY: ci-placeholder
           SUPABASE_PUB_API_KEY: ci-placeholder
-          SEND_GRID_API_KEY: ci-placeholder
         run: mvn --batch-mode clean verify
 
       - name: Build image
@@ -52,13 +51,11 @@ jobs:
           MAIL_PASSWORD: ci-placeholder
           SUPABASE_URL: https://example.invalid
           SUPABASE_SECRET_API_KEY: ci-placeholder
-          SEND_GRID_API_KEY: ci-placeholder
         run: |
           set -euo pipefail
           docker run --detach --name preparedness-smoke \
             --env MAIL_USERNAME --env MAIL_PASSWORD \
             --env SUPABASE_URL --env SUPABASE_SECRET_API_KEY \
-            --env SEND_GRID_API_KEY \
             "${IMAGE_REPOSITORY}:${IMAGE_TAG}"
           trap 'docker logs preparedness-smoke; docker rm --force preparedness-smoke' EXIT
           for attempt in $(seq 1 45); do
@@ -71,8 +68,6 @@ jobs:
 
       - name: Validate Compose configuration
         env:
-          DATABASE_URL: jdbc:postgresql://db.example.invalid:5432/postgres?sslmode=require
-          DATABASE_PASSWORD: ci-placeholder
           MAIL_USERNAME: ci@example.invalid
           MAIL_PASSWORD: ci-placeholder
           SUPABASE_URL: https://example.invalid
@@ -132,13 +127,10 @@ jobs:
 
       - name: Create production environment file
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_API_KEY: ${{ secrets.SUPABASE_SECRET_API_KEY }}
-          SEND_GRID_API_KEY: ${{ secrets.SEND_GRID_API_KEY }}
         run: |
           set -euo pipefail
           output="${RUNNER_TEMP}/production.env"
@@ -156,18 +148,12 @@ jobs:
           printf '%s\n' \
             'SPRING_PROFILES_ACTIVE=prod' \
             'SERVER_PORT=8080' \
-            'DATABASE_USERNAME=postgres' \
-            'MAIL_HOST=smtp.gmail.com' \
-            'MAIL_PORT=587' \
             'LOGGING_LEVEL_ROOT=INFO' \
             'LOGGING_LEVEL_COM_BEREDSKAP=INFO' >> "$output"
-          write_value DATABASE_URL "$DATABASE_URL"
-          write_value DATABASE_PASSWORD "$DATABASE_PASSWORD"
           write_value MAIL_USERNAME "$MAIL_USERNAME"
           write_value MAIL_PASSWORD "$MAIL_PASSWORD"
           write_value SUPABASE_URL "$SUPABASE_URL"
           write_value SUPABASE_SECRET_API_KEY "$SUPABASE_SECRET_API_KEY"
-          write_value SEND_GRID_API_KEY "$SEND_GRID_API_KEY"
 
       - name: Copy deployment files
         env:

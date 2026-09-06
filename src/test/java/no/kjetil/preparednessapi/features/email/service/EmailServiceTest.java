@@ -23,21 +23,6 @@ public class EmailServiceTest {
 
     @BeforeEach
     public void setup() {
-        // Initialize emailService with a mock or actual implementation as needed
-
-        // sendGridApiKey = System.getenv("SEND_GRID_API_KEY");
-        // if(sendGridApiKey == null || sendGridApiKey.isEmpty()) {
-        //     Properties props = new Properties();
-        //     try (InputStream in = getClass().getClassLoader().getResourceAsStream("application-test.properties")) {
-        //         if (in != null) {
-        //             props.load(in);
-        //             sendGridApiKey = props.getProperty("SEND_GRID_API_KEY");
-        //         }
-        //     } catch (Exception e) {
-        //         e.printStackTrace();
-        //     }
-        // }
-
         EmailProperties emailProperties = new EmailProperties(username, password);
         
         emailService = new EmailServiceImpl(emailProperties);
@@ -47,10 +32,8 @@ public class EmailServiceTest {
     @Disabled
     @Test
     public void shouldSendEmail() {
-        // This is a placeholder test. Implement actual tests with mocking as needed.
-        // For example, you could use Mockito to mock the SendGrid client and verify interactions.
         int responseStatus = emailService.sendEmail("kjetiltorvund@gmail.com", "test", "Hello, World!");
 
-        assert(responseStatus == 202); // 202 is the expected status code for a successful SendGrid email request
+        assert(responseStatus == 1);
     }
 }

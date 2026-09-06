@@ -8,7 +8,7 @@ Applikasjonen kjører som en Spring Boot-container bak Nginx på Ubuntu 24.04. G
 - URL: `https://45-248-37-116.cloud-xip.com`
 - VPS-katalog: `/opt/prepeardness-api`
 - SSH-bruker for deployment: `deploy`
-- Database: ekstern Supabase PostgreSQL med TLS
+- Datalagring: Supabase REST API over HTTPS
 - Offentlig driftssjekk: `GET /actuator/health`
 
 Port 8080 er ikke eksponert fra VPS-en. Swagger og øvrige Actuator-endepunkter returnerer 404 gjennom Nginx.
@@ -97,13 +97,14 @@ Følgende environment secrets er påkrevd:
 | `VPS_USER` | `deploy` |
 | `VPS_SSH_KEY` | Hele privatnøkkelen fra `~/.ssh/kamatera_deploy` |
 | `VPS_KNOWN_HOSTS` | Verifisert known-hosts-linje for VPS-ens SSH-vertsnøkkel |
-| `DATABASE_URL` | JDBC-URL med `sslmode=require` |
-| `DATABASE_PASSWORD` | Supabase-databasepassord |
-| `MAIL_USERNAME` | SMTP-brukernavn |
-| `MAIL_PASSWORD` | SMTP-app-passord |
+| `MAIL_USERNAME` | Gmail-adressen som sender e-post |
+| `MAIL_PASSWORD` | App-passord opprettet for Gmail-kontoen |
 | `SUPABASE_URL` | Supabase-prosjektets HTTPS-URL |
 | `SUPABASE_SECRET_API_KEY` | Hemmelig Supabase-nøkkel |
-| `SEND_GRID_API_KEY` | SendGrid-nøkkel som applikasjonen forventer |
+
+E-postintegrasjonen bruker Gmail SMTP. Det skal ikke opprettes noen SendGrid-secret. Gmail-kontoen må ha tofaktorautentisering aktivert, og `MAIL_PASSWORD` skal være et Google app-passord, ikke kontoens vanlige passord.
+
+Produksjonsapplikasjonen kobler ikke direkte til PostgreSQL med JDBC. `DATABASE_URL`, `DATABASE_USERNAME` og `DATABASE_PASSWORD` skal derfor ikke opprettes som production secrets. Applikasjonen bruker `SUPABASE_URL` og `SUPABASE_SECRET_API_KEY` for å kalle Supabase REST API over HTTPS.
 
 Hent verts-ID fra en betrodd kanal, for eksempel Kamatera-konsollen:
 
