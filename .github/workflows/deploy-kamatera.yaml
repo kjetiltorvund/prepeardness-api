@@ -158,8 +158,8 @@ jobs:
 
       - name: Copy deployment files
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
         run: |
           set -euo pipefail
           ssh_options=(-i ~/.ssh/deploy_key -o BatchMode=yes)
