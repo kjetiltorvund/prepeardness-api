@@ -84,6 +84,7 @@ jobs:
             -keyout "${certificate_dir}/privkey.pem" \
             -out "${certificate_dir}/fullchain.pem" >/dev/null 2>&1
           docker run --rm \
+            --add-host app:127.0.0.1 \
             -v "${PWD}/nginx/conf.d:/etc/nginx/conf.d:ro" \
             -v "${RUNNER_TEMP}/letsencrypt:/etc/letsencrypt:ro" \
             -v "${RUNNER_TEMP}/certbot:/var/www/certbot:ro" \

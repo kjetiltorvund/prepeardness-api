@@ -12,9 +12,9 @@ public class EmailProperties {
     public EmailProperties() {
     }
     
-    public EmailProperties(String username2, String password2) {
-        username = username2;
-        password = password2;
+    public EmailProperties(String username, String password) {
+        this.username = username;
+        this.password = password;
     }
     public String getUsername() {
         return username;
