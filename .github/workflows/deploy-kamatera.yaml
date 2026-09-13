@@ -174,11 +174,11 @@ jobs:
             "${VPS_USER}@${VPS_HOST}:${remote_stage}/production.env"
           ssh "${ssh_options[@]}" "${VPS_USER}@${VPS_HOST}" \
             "trap 'rm -rf \"${remote_stage}\"' EXIT; \
-             sudo -n install -d -o '${VPS_USER}' -g '\$(id -gn)' /opt/prepeardness-api /opt/prepeardness-api/nginx /opt/prepeardness-api/nginx/conf.d && \
-             sudo -n install -o '${VPS_USER}' -g '\$(id -gn)' -m 644 '${remote_stage}/docker-compose.yaml' /opt/prepeardness-api/docker-compose.yaml && \
-             sudo -n install -o '${VPS_USER}' -g '\$(id -gn)' -m 755 '${remote_stage}/deploy.sh' /opt/prepeardness-api/deploy.sh && \
-             sudo -n install -o '${VPS_USER}' -g '\$(id -gn)' -m 644 '${remote_stage}/app.conf' /opt/prepeardness-api/nginx/conf.d/app.conf && \
-             sudo -n install -o '${VPS_USER}' -g '\$(id -gn)' -m 600 '${remote_stage}/production.env' /opt/prepeardness-api/.env"
+             install -d -m 750 prepeardness-api prepeardness-api/nginx prepeardness-api/nginx/conf.d && \
+             install -m 644 '${remote_stage}/docker-compose.yaml' prepeardness-api/docker-compose.yaml && \
+             install -m 755 '${remote_stage}/deploy.sh' prepeardness-api/deploy.sh && \
+             install -m 644 '${remote_stage}/app.conf' prepeardness-api/nginx/conf.d/app.conf && \
+             install -m 600 '${remote_stage}/production.env' prepeardness-api/.env"
 
       - name: Authenticate VPS to GHCR
         env:
@@ -192,11 +192,11 @@ jobs:
 
       - name: Deploy immutable image
         env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
         run: |
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes "${VPS_USER}@${VPS_HOST}" \
-            "IMAGE_REPOSITORY='${IMAGE_REPOSITORY}' IMAGE_TAG='${IMAGE_TAG}' /opt/prepeardness-api/deploy.sh"
+            "cd prepeardness-api && IMAGE_REPOSITORY='${IMAGE_REPOSITORY}' IMAGE_TAG='${IMAGE_TAG}' DEPLOY_DIR=\"\$PWD\" ./deploy.sh"
 
       - name: Verify public surface
         run: |
