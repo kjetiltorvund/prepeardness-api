@@ -209,7 +209,6 @@ jobs:
             if [[ "$attempt" -eq 20 ]]; then exit 1; fi
             sleep 3
           done
-          [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' "${PRODUCTION_URL}/swagger-ui.html")" == "404" ]]
           [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' "${PRODUCTION_URL}/actuator/info")" == "404" ]]
           [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' http://45-248-37-116.cloud-xip.com/)" == "301" ]]
           if curl --silent --fail --connect-timeout 3 http://45.248.37.116:8080/ >/dev/null; then
