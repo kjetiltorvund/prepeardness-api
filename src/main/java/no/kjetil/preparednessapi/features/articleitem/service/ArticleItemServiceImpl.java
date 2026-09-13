@@ -221,8 +221,29 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
     @Override
     public Optional<ArticleItem> findById(Long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findById'");
+        String uriPath = basePath + "?id=eq." + id;
+        HttpRequest request = createGetRequest(uriPath);
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                throw new RuntimeException("Unable to find ArticleItem. Return code: " + response.statusCode());
+            }
+
+            List<ArticleItemDto> articleItems = objectMapper.readValue(
+                    response.body(), new TypeReference<List<ArticleItemDto>>() {});
+
+            return articleItems.stream()
+                    .findFirst()
+                    .map(item -> modelMapper.map(item, ArticleItem.class));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
