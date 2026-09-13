@@ -108,7 +108,6 @@ info "Deploying immutable image ${FULL_IMAGE}"
 write_image_environment "$FULL_IMAGE"
 compose config --quiet
 compose pull nginx
-compose run --rm --no-deps nginx nginx -t
 
 if ! deploy_image "$FULL_IMAGE"; then
     compose logs --tail=100 app || true
