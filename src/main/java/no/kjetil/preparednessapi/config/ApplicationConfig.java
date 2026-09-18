@@ -16,15 +16,19 @@ public class ApplicationConfig {
         return HttpClient.newHttpClient(); // Placeholder
     }
 
-    @Bean 
+    @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
-            @Override 
+            @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("API-Version", "Content-Type");
+                        .allowedOrigins("http://localhost:5173")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        .allowedHeaders(
+                                "API-Version",
+                                "Content-Type",
+                                "X-App-Version",
+                                "Authorization");
             }
         };
     }
