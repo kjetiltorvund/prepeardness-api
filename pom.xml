@@ -8,7 +8,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.8</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath /> <!-- lookup parent from repository -->
     </parent>
 
     <groupId>no.kjetil</groupId>
@@ -27,7 +27,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <java.version>21</java.version>
         <junit-jupiter.version>5.14.0</junit-jupiter.version>
-        <argLine/><!-- needed for Mockito Java agent -->
+        <argLine /><!-- needed for Mockito Java agent -->
     </properties>
 
     <dependencies>
@@ -57,6 +57,11 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
             <version>6.2.10</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+            <version>3.5.7</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>

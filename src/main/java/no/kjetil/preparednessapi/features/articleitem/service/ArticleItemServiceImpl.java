@@ -13,6 +13,7 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
@@ -219,6 +220,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         throw new UnsupportedOperationException("Unimplemented method 'findAllByDatePassedExpirationDate'");
     }
 
+    @Cacheable("articles")
     @Override
     public Optional<ArticleItem> findById(Long id) {
         String uriPath = basePath + "?id=eq." + id;
@@ -246,6 +248,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         }
     }
 
+    @Cacheable("articles")
     @Override
     public List<ArticleItem> findAll() {
         String uriPath = "/rest/v1/article_items";

@@ -18,6 +18,8 @@ public class ArticleItem {
 
     private Date expirationDate;
 
+    private int daysUntilExpired;
+
     @Builder.Default
     private boolean expired = false;
 
