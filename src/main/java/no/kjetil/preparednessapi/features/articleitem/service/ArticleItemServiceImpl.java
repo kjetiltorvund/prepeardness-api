@@ -308,13 +308,11 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     }
 
     private Optional<String> getBody(ArticleItem articleItem) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        
         try {
-            return Optional.of(objectMapper.writeValueAsString(articleItem));
+            ArticleItemDto articleItemDto = modelMapper.map(articleItem, ArticleItemDto.class);
+            return Optional.of(objectMapper.writeValueAsString(articleItemDto));
         } catch (JsonProcessingException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            logger.error("Unable to serialize ArticleItem", e);
         }
         
         return Optional.empty();

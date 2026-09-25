@@ -8,12 +8,18 @@ import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
+import org.mockito.ArgumentCaptor;
 
+import java.io.ByteArrayOutputStream;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Flow;
 
 import static java.net.http.HttpResponse.BodyHandler;
 import static org.hamcrest.CoreMatchers.is;
@@ -72,6 +78,72 @@ class ArticleItemServiceImplTest {
         assertNotNull(createdArticleItem);
         assertEquals(7, createdArticleItem.getId());
         verify(httpClient).send(any(HttpRequest.class), any(BodyHandler.class));
+    }
+
+    @Test
+    public void shouldUseArticleItemDtoJsonPropertyNamesWhenSaving() throws Exception {
+        HttpClient httpClient = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(201);
+        when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenReturn(response);
+
+        ObjectMapper objectMapper = new JacksonConfig().objectMapper();
+        ArticleItemService articleItemService = new ArticleItemServiceImpl(
+                getOptions(),
+                httpClient,
+                new ModelMapper(),
+                objectMapper);
+
+        articleItemService.save(ArticleItem.builder()
+                .articleName("Pepperonini")
+                .expirationDate(Date.from(Instant.parse("2030-01-02T03:04:05Z")))
+                .qrCode("qr-123")
+                .build());
+
+        ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+        verify(httpClient).send(requestCaptor.capture(), any(BodyHandler.class));
+
+        String requestBody = readRequestBody(requestCaptor.getValue());
+
+        var json = objectMapper.readTree(requestBody);
+        assertEquals("Pepperonini", json.get("article_name").asText());
+        assertEquals("2030-01-02T03:04:05.000+00:00", json.get("expiration_date").asText());
+        assertEquals("qr-123", json.get("qr_code").asText());
+        assertFalse(json.has("articleName"));
+        assertFalse(json.has("expirationDate"));
+        assertFalse(json.has("qrCode"));
+    }
+
+    private String readRequestBody(HttpRequest request) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        CompletableFuture<String> result = new CompletableFuture<>();
+
+        request.bodyPublisher().orElseThrow().subscribe(new Flow.Subscriber<>() {
+            @Override
+            public void onSubscribe(Flow.Subscription subscription) {
+                subscription.request(Long.MAX_VALUE);
+            }
+
+            @Override
+            public void onNext(ByteBuffer item) {
+                byte[] bytes = new byte[item.remaining()];
+                item.get(bytes);
+                output.writeBytes(bytes);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                result.completeExceptionally(throwable);
+            }
+
+            @Override
+            public void onComplete() {
+                result.complete(output.toString(StandardCharsets.UTF_8));
+            }
+        });
+
+        return result.join();
     }
 
     private ArticleItem getNewArticleItem() {
