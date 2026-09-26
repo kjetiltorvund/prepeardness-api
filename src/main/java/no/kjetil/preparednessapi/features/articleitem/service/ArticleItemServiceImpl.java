@@ -14,6 +14,7 @@ import org.modelmapper.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
@@ -64,15 +65,17 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if(response.statusCode() < HttpStatus.OK.value()) {
+            if (response.statusCode() < HttpStatus.OK.value()) {
                 String message = String.format("Unable to create object. Return code: %d", response.statusCode());
                 throw new RuntimeException(message);
             }
 
-            List<ArticleItemDto> result = objectMapper.readValue(response.body(), new TypeReference<List<ArticleItemDto>>() {
-            });
+            List<ArticleItemDto> result = objectMapper.readValue(response.body(),
+                    new TypeReference<List<ArticleItemDto>>() {
+                    });
 
-            return result.stream().map(item -> modelMapper.map(item, ArticleItem.class)).collect(Collectors.toList()).getFirst();
+            return result.stream().map(item -> modelMapper.map(item, ArticleItem.class)).collect(Collectors.toList())
+                    .getFirst();
         } catch (IOException | InterruptedException e) {
             logger.error("Error creating ArticleItem", e);
             e.printStackTrace();
@@ -96,7 +99,8 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             if (articleItems.isEmpty()) {
                 return null;
             }
-            return articleItems.stream().map(article -> modelMapper.map(article, ArticleItem.class)).collect(Collectors.toList());
+            return articleItems.stream().map(article -> modelMapper.map(article, ArticleItem.class))
+                    .collect(Collectors.toList());
         } catch (IOException | InterruptedException e) {
             logger.error("Error finding ArticleItem by name", e);
             e.printStackTrace();
@@ -146,33 +150,42 @@ public class ArticleItemServiceImpl implements ArticleItemService {
                 .uri(URI.create(uri))
                 .timeout(Duration.ofSeconds(30))
                 .headers(
-                        apiKeyParameter, apiKey
-                ).build();
+                        apiKeyParameter, apiKey)
+                .build();
         return request;
     }
 
     private HttpRequest createPostRequest(String uriPath, String body) {
         String uri = apiBaseUrl + (StringUtils.isBlank(body) ? "" : uriPath);
-        
+
         return HttpRequest.newBuilder()
-        .POST(HttpRequest.BodyPublishers.ofString(body))
-        .uri(URI.create(uri))
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .uri(URI.create(uri))
                 .headers(apiKeyParameter, apiKey, "Prefer", "return=representation")
-        .build();
+                .build();
     }
 
     private HttpRequest createPutRequest(String uriPath, String body) {
         String uri = apiBaseUrl + uriPath;
 
         return HttpRequest.newBuilder()
-        .PUT(HttpRequest.BodyPublishers.ofString(body))
-        .uri(URI.create(uri))
+                .PUT(HttpRequest.BodyPublishers.ofString(body))
+                .uri(URI.create(uri))
                 .headers(apiKeyParameter, apiKey, "Prefer", "return=representation")
+                .build();
+    }
+
+    private HttpRequest createPatchRequest(String uriPath, String body) {
+        String uri = apiBaseUrl + uriPath;
+
+        return HttpRequest.newBuilder()
+        .method(HttpMethod.PATCH.name(), HttpRequest.BodyPublishers.ofString(body))
+        .uri(URI.create(uri))
+        .headers(apiKeyParameter, apiKey, "Prefer", , "return=representation")
         .build();
     }
 
-    @Override
-    public ArticleItem updateArticleItem(ArticleItem articleItem) {
+    public ArticleItem patchUpdateArticleItem(ArticleItem articleItem) {
         String uriPath = basePath + "?id=eq." + articleItem.getId();
 
         UpdateArticleDto updateArticleDto = modelMapper.map(articleItem, UpdateArticleDto.class);
@@ -184,13 +197,49 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            if (response.statusCode() < HttpStatus.OK.value() || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
-                String message = String.format("Unable to update object. Return code: %d, body: %s", response.statusCode(), response.body());
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                String message = String.format("Unable to update object. Return code: %d, body: %s",
+                        response.statusCode(), response.body());
                 throw new RuntimeException(message);
             }
 
-            List<ArticleItemDto> updatedItems = objectMapper.readValue(response.body(), new TypeReference<List<ArticleItemDto>>() {
-            });
+            List<ArticleItemDto> updatedItems = objectMapper.readValue(response.body(),
+                    new TypeReference<List<ArticleItemDto>>() {
+                    });
+
+            return updatedItems.stream()
+                    .findFirst()
+                    .map(item -> modelMapper.map(item, ArticleItem.class))
+                    .orElseThrow(() -> new RuntimeException("Update response did not contain any article items"));
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public ArticleItem updateArticleItem(ArticleItem articleItem) {
+        String uriPath = basePath + "?id=eq." + articleItem.getId();
+
+        UpdateArticleDto updateArticleDto = modelMapper.map(articleItem, UpdateArticleDto.class);
+
+        String body = convertBodyToString(updateArticleDto);
+
+        HttpRequest request = createPatchRequest(uriPath, body);
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                String message = String.format("Unable to update object. Return code: %d, body: %s",
+                        response.statusCode(), response.body());
+                throw new RuntimeException(message);
+            }
+
+            List<ArticleItemDto> updatedItems = objectMapper.readValue(response.body(),
+                    new TypeReference<List<ArticleItemDto>>() {
+                    });
 
             return updatedItems.stream()
                     .findFirst()
@@ -235,7 +284,8 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             }
 
             List<ArticleItemDto> articleItems = objectMapper.readValue(
-                    response.body(), new TypeReference<List<ArticleItemDto>>() {});
+                    response.body(), new TypeReference<List<ArticleItemDto>>() {
+                    });
 
             return articleItems.stream()
                     .findFirst()
@@ -262,9 +312,12 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             ObjectMapper objectMapper = new ObjectMapper();
 
-            List<ArticleItemDto> articleItemDtos = objectMapper.readValue(body, new TypeReference<List<ArticleItemDto>>() {});
+            List<ArticleItemDto> articleItemDtos = objectMapper.readValue(body,
+                    new TypeReference<List<ArticleItemDto>>() {
+                    });
 
-            return modelMapper.map(articleItemDtos, new TypeToken<List<ArticleItem>>() {}.getType());
+            return modelMapper.map(articleItemDtos, new TypeToken<List<ArticleItem>>() {
+            }.getType());
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
@@ -278,11 +331,10 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     public HttpStatusCode save(ArticleItem articleItem) {
         String uriPath = "/rest/v1/article_items";
 
-        
         String body = getBody(articleItem).orElse("");
 
         HttpRequest request = createPostRequest(uriPath, body);
-        
+
         HttpStatusCode statusCode = HttpStatus.UNPROCESSABLE_ENTITY;
 
         try {
@@ -290,10 +342,11 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             statusCode = HttpStatusCode.valueOf(response.statusCode());
 
-            if(response.statusCode() >= 200 && response.statusCode() < 300) {                
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 return HttpStatusCode.valueOf(response.statusCode());
             } else {
-                logger.error("Failed to save ArticleItem. Status code: {}, Response body: {}", response.statusCode(), response.body());
+                logger.error("Failed to save ArticleItem. Status code: {}, Response body: {}", response.statusCode(),
+                        response.body());
                 throw new RuntimeException("Failed to save ArticleItem. Status code: " + response.statusCode());
             }
         } catch (IOException e) {
@@ -314,11 +367,9 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         } catch (JsonProcessingException e) {
             logger.error("Unable to serialize ArticleItem", e);
         }
-        
+
         return Optional.empty();
     }
-
-    
 
     @Override
     public List<ArticleItem> saveAll(List<ArticleItem> articleItems) {
