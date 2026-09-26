@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
@@ -51,6 +52,28 @@ class ArticleItemServiceImplTest {
         assertNotNull(articleItem);
         assertEquals(4, articleItem.getId());
         verify(httpClient).send(any(HttpRequest.class), any(BodyHandler.class));
+    }
+
+    @Test
+    public void shouldPreserveCreatedAtWhenGettingArticleItemById() throws Exception {
+        HttpClient httpClient = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("[{\"id\":4,\"article_name\":\"Pepperonini\","
+                + "\"created_at\":\"2026-01-25T22:25:32.68761+00:00\"}]");
+        when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenReturn(response);
+
+        ArticleItemService articleItemService = new ArticleItemServiceImpl(
+                getOptions(),
+                httpClient,
+                new ModelMapper(),
+                new JacksonConfig().objectMapper());
+
+        Optional<ArticleItem> articleItem = articleItemService.findById(4L);
+
+        assertTrue(articleItem.isPresent());
+        assertEquals(Instant.parse("2026-01-25T22:25:32.687Z"), articleItem.orElseThrow().getCreatedAt().toInstant());
     }
 
     private ArticleItemServiceProperties getOptions() {

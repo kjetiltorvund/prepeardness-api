@@ -16,6 +16,8 @@ public class ArticleItem {
 
     private String articleName;
 
+    private Date createdAt;
+
     private Date expirationDate;
 
     private int daysUntilExpired;
