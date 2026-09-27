@@ -24,7 +24,7 @@ public class UpdateArticleDto {
     @JsonProperty("expiration_date")
     //@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX")
     private OffsetDateTime expirationDate;
-    private int daysUntilExpired;
+    //private int daysUntilExpired;
     private String barcode;
     @JsonProperty("qr_code")
     private String qrCode;

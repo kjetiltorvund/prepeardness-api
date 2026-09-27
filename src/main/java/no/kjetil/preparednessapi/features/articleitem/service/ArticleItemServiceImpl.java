@@ -181,7 +181,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         return HttpRequest.newBuilder()
         .method(HttpMethod.PATCH.name(), HttpRequest.BodyPublishers.ofString(body))
         .uri(URI.create(uri))
-        .headers(apiKeyParameter, apiKey, "Prefer", , "return=representation")
+        .headers(apiKeyParameter, apiKey, "Prefer", "return=representation")
         .build();
     }
 
