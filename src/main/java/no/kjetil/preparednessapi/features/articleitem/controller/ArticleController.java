@@ -84,7 +84,7 @@ public class ArticleController {
             return ResponseEntity.badRequest().build();
         }
 
-        articleItemService.save(articleItem);
+        articleItemService.updateArticleItem(articleItem);
 
         ArticleItemDto updated = modelMapper.map(articleItemService.findById(articleItem.getId()), ArticleItemDto.class);
 
