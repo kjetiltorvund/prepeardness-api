@@ -26,7 +26,7 @@ public class ApplicationConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+                        .allowedOrigins("http://localhost:5173", "http://127.0.0.1:5173", "https://kjetiltorvund.github.io")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders(
                                 "API-Version",
