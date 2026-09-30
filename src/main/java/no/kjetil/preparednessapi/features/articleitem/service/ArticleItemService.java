@@ -19,7 +19,7 @@ public interface ArticleItemService {
 
     List<ArticleItem> findAllByDatePassedExpirationDate(Date date);
 
-    Optional<ArticleItem> findById(Long id);
+    ArticleItem findById(Long id);
 
     List<ArticleItem> findAll();
 

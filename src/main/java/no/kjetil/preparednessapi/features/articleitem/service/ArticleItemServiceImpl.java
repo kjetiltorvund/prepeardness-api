@@ -13,6 +13,8 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -56,6 +58,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     }
 
     @Override
+    @CacheEvict(value = "articles", allEntries = true)
     public ArticleItem createArticleItem(ArticleItem articleItem) {
 
         CreateArticleItemDto createArticleItemDto = modelMapper.map(articleItem, CreateArticleItemDto.class);
@@ -120,6 +123,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     }
 
     @Override
+    @Cacheable(value = "articles", key = "#id")
     public ArticleItem readArticleItemById(long id) {
         String uriPath = basePath + "?id=eq." + id;
         HttpRequest request = createGetRequest(uriPath);
@@ -218,6 +222,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     }
 
     @Override
+    @CacheEvict(value = "articles", allEntries = true)
     public ArticleItem updateArticleItem(ArticleItem articleItem) {
         String uriPath = basePath + "?id=eq." + articleItem.getId();
 
@@ -259,8 +264,29 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     }
 
     @Override
+    @CacheEvict(value = "articles", allEntries = true)
     public void deleteArticleItemById(long id) {
+        String uriPath = basePath + "?id=eq." + id;
 
+        HttpRequest request = createDeleteRequest(uriPath);
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                throw new RuntimeException("Unable to delete ArticleItem. Return code: " + response.statusCode());
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private HttpRequest createDeleteRequest(String uriPath) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(uriPath))
+                .DELETE()
+                .build();
     }
 
     @Override
@@ -269,9 +295,9 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         throw new UnsupportedOperationException("Unimplemented method 'findAllByDatePassedExpirationDate'");
     }
 
-    @Cacheable("articles")
+    @Cacheable(value = "articles", key = "#id")
     @Override
-    public Optional<ArticleItem> findById(Long id) {
+    public ArticleItem findById(Long id) {
         String uriPath = basePath + "?id=eq." + id;
         HttpRequest request = createGetRequest(uriPath);
 
@@ -289,7 +315,8 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             return articleItems.stream()
                     .findFirst()
-                    .map(item -> modelMapper.map(item, ArticleItem.class));
+                    .map(item -> modelMapper.map(item, ArticleItem.class))
+                    .orElse(null);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
@@ -298,7 +325,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         }
     }
 
-    @Cacheable("articles")
+    @Cacheable(value = "articles", key = "'all'")
     @Override
     public List<ArticleItem> findAll() {
         String uriPath = "/rest/v1/article_items";
@@ -321,13 +348,13 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
-        // TODO Auto-generated method stub
-        // throw new UnsupportedOperationException("Unimplemented method 'findAll'");
     }
 
     @Override
+    @CacheEvict(value = "articles", allEntries = true)
     public HttpStatusCode save(ArticleItem articleItem) {
         String uriPath = "/rest/v1/article_items";
 
@@ -354,6 +381,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             e.printStackTrace();
         } catch (InterruptedException e) {
             // TODO Auto-generated catch block
+            Thread.currentThread().interrupt();
             e.printStackTrace();
         }
 
@@ -372,12 +400,14 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     }
 
     @Override
+    @CacheEvict(value = "articles", allEntries = true)
     public List<ArticleItem> saveAll(List<ArticleItem> articleItems) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'saveAll'");
     }
 
     @Override
+    @CacheEvict(value = "articles", allEntries = true)
     public void deleteById(Long id) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'deleteById'");

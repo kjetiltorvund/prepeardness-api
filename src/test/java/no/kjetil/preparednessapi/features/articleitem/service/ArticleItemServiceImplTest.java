@@ -70,10 +70,10 @@ class ArticleItemServiceImplTest {
                 new ModelMapper(),
                 new JacksonConfig().objectMapper());
 
-        Optional<ArticleItem> articleItem = articleItemService.findById(4L);
+        ArticleItem articleItem = articleItemService.findById(4L);
 
-        assertTrue(articleItem.isPresent());
-        assertEquals(Instant.parse("2026-01-25T22:25:32.687Z"), articleItem.orElseThrow().getCreatedAt().toInstant());
+        assertNotNull(articleItem);
+        assertEquals(Instant.parse("2026-01-25T22:25:32.687Z"), articleItem.getCreatedAt().toInstant());
     }
 
     private ArticleItemServiceProperties getOptions() {

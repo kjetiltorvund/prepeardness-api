@@ -43,7 +43,7 @@ class ArticleItemServiceImplITest {
     public void shouldUpdateExistingArticle() {
 
         // Arrange
-        ArticleItem testItem = sut.findById(2L).orElse(null);
+        ArticleItem testItem = sut.findById(2L);
 
         assertNotNull(testItem);
 

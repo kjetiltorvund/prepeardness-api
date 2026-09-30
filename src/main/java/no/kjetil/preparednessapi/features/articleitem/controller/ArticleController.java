@@ -31,7 +31,7 @@ public class ArticleController {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ArticleItemDto> getArticleById(@PathVariable @NonNull Long id) {
-        ArticleItemDto itemDto = convertToDto(articleItemService.findById(id).orElse(new ArticleItem()));
+        ArticleItemDto itemDto = convertToDto(articleItemService.findById(id));
         return ResponseEntity.ok(itemDto);
     }
 
@@ -93,9 +93,9 @@ public class ArticleController {
 
     @DeleteMapping(path = "/{id}")
     public ResponseEntity<Void> deleteArticleById(@PathVariable @NonNull Long id) {
-        Optional<ArticleItem> articleItemOptional = articleItemService.findById(id);
+        ArticleItem articleItem = articleItemService.findById(id);
 
-        if (articleItemOptional.isEmpty()) {
+        if (articleItem == null) {
             return ResponseEntity.notFound().build();
         }
 

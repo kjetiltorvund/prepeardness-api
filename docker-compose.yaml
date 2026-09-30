@@ -23,6 +23,11 @@ services:
     cpus: 1.0
     networks:
       - web
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   nginx:
     image: nginx:1.27-alpine
@@ -44,6 +49,11 @@ services:
       retries: 3
     networks:
       - web
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   web:
