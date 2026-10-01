@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.service.ArticleItemService;
-
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +11,6 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -52,6 +50,7 @@ public class ArticleController {
         if(articleItem == null) {
             return ResponseEntity.badRequest().build();
         }
+
         articleItemService.save(articleItem);
 
         return ResponseEntity.ok(HttpStatus.CREATED);

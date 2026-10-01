@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.CreateArticleItemDto;
-
 import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
@@ -14,7 +13,6 @@ import org.modelmapper.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -356,6 +354,11 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     @Override
     @CacheEvict(value = "articles", allEntries = true)
     public HttpStatusCode save(ArticleItem articleItem) {
+
+        if (articleItem.getCreatedAt() == null) {
+            articleItem.setCreatedAt(new Date());
+        }
+
         String uriPath = "/rest/v1/article_items";
 
         String body = getBody(articleItem).orElse("");
