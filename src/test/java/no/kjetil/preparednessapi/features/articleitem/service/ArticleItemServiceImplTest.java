@@ -7,8 +7,8 @@ import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
 import org.junit.jupiter.api.Test;
-import org.modelmapper.ModelMapper;
 import org.mockito.ArgumentCaptor;
+import org.modelmapper.ModelMapper;
 
 import java.io.ByteArrayOutputStream;
 import java.net.http.HttpClient;
@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
@@ -109,6 +108,7 @@ class ArticleItemServiceImplTest {
         @SuppressWarnings("unchecked")
         HttpResponse<String> response = mock(HttpResponse.class);
         when(response.statusCode()).thenReturn(201);
+        when(response.body()).thenReturn("[{\"id\":8,\"article_name\":\"Pepperonini\",\"qr_code\":\"qr-123\"}]");
         when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenReturn(response);
 
         ObjectMapper objectMapper = new JacksonConfig().objectMapper();
@@ -118,11 +118,13 @@ class ArticleItemServiceImplTest {
                 new ModelMapper(),
                 objectMapper);
 
-        articleItemService.save(ArticleItem.builder()
+        ArticleItem savedItem = articleItemService.save(ArticleItem.builder()
                 .articleName("Pepperonini")
                 .expirationDate(Date.from(Instant.parse("2030-01-02T03:04:05Z")))
                 .qrCode("qr-123")
                 .build());
+
+        assertEquals(8, savedItem.getId());
 
         ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
         verify(httpClient).send(requestCaptor.capture(), any(BodyHandler.class));

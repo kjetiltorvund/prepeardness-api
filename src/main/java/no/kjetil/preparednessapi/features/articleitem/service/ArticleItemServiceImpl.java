@@ -16,7 +16,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -353,7 +352,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
     @Override
     @CacheEvict(value = "articles", allEntries = true)
-    public HttpStatusCode save(ArticleItem articleItem) {
+    public ArticleItem save(ArticleItem articleItem) {
 
         if (articleItem.getCreatedAt() == null) {
             articleItem.setCreatedAt(new Date());
@@ -365,30 +364,27 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
         HttpRequest request = createPostRequest(uriPath, body);
 
-        HttpStatusCode statusCode = HttpStatus.UNPROCESSABLE_ENTITY;
-
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-            statusCode = HttpStatusCode.valueOf(response.statusCode());
-
-            if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                return HttpStatusCode.valueOf(response.statusCode());
-            } else {
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 logger.error("Failed to save ArticleItem. Status code: {}, Response body: {}", response.statusCode(),
                         response.body());
                 throw new RuntimeException("Failed to save ArticleItem. Status code: " + response.statusCode());
             }
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            Thread.currentThread().interrupt();
-            e.printStackTrace();
-        }
 
-        return statusCode;
+            // "Prefer: return=representation" makes the database return the saved row, including its id.
+            List<ArticleItemDto> saved = objectMapper.readValue(response.body(),
+                    new TypeReference<List<ArticleItemDto>>() {
+                    });
+
+            return modelMapper.map(saved.getFirst(), ArticleItem.class);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save ArticleItem", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while saving ArticleItem", e);
+        }
     }
 
     private Optional<String> getBody(ArticleItem articleItem) {

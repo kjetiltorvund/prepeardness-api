@@ -44,16 +44,16 @@ public class ArticleController {
     }
 
     @PostMapping
-    public ResponseEntity<HttpStatus> createArticleItem(@Valid @RequestBody ArticleItemDto requestBody) {
+    public ResponseEntity<ArticleItemDto> createArticleItem(@Valid @RequestBody ArticleItemDto requestBody) {
         ArticleItem articleItem = modelMapper.map(requestBody, ArticleItem.class);
 
         if(articleItem == null) {
             return ResponseEntity.badRequest().build();
         }
 
-        articleItemService.save(articleItem);
+        ArticleItem savedItem = articleItemService.save(articleItem);
 
-        return ResponseEntity.ok(HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(convertToDto(savedItem));
     }
 
     @PostMapping(path = "/batch")

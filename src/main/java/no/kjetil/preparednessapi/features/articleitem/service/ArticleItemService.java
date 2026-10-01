@@ -1,12 +1,9 @@
 package no.kjetil.preparednessapi.features.articleitem.service;
 
+import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
+
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
-
-import org.springframework.http.HttpStatusCode;
-
-import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 
 public interface ArticleItemService {
     ArticleItem createArticleItem(ArticleItem articleItem);
@@ -23,7 +20,7 @@ public interface ArticleItemService {
 
     List<ArticleItem> findAll();
 
-    HttpStatusCode save(ArticleItem articleItem);
+    ArticleItem save(ArticleItem articleItem);
 
     List<ArticleItem> saveAll(List<ArticleItem> articleItems);
 
