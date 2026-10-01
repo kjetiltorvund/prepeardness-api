@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.time.OffsetDateTime;
+import java.util.Date;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @ToString
@@ -23,7 +24,7 @@ public class UpdateArticleDto {
     private OffsetDateTime createdAt;
     @JsonProperty("expiration_date")
     //@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX")
-    private OffsetDateTime expirationDate;
+    private Date expirationDate;
     //private int daysUntilExpired;
     private String barcode;
     @JsonProperty("qr_code")
