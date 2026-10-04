@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,8 +29,16 @@ public class ArticleController {
     }
 
     @GetMapping(path = "/{id}")
-    public ResponseEntity<ArticleItemDto> getArticleById(@PathVariable @NonNull Long id) {
+    public ResponseEntity<ArticleItemDto> getArticleById(
+            @PathVariable @NonNull Long id,
+            @RequestParam(required = false, defaultValue = "false") Boolean replaces) {
         ArticleItemDto itemDto = convertToDto(articleItemService.findById(id));
+        return ResponseEntity.ok(itemDto);
+    }
+
+    @GetMapping(path = "/barcode/{barcode}")
+    public ResponseEntity<ArticleItemDto> getArticleByBarcode(@PathVariable String barCode, @RequestParam Date expirationDate) {
+        ArticleItemDto itemDto = convertToDto(articleItemService.findByBarcodeAndExpirationDate(barCode, expirationDate));
         return ResponseEntity.ok(itemDto);
     }
 
@@ -62,7 +71,7 @@ public class ArticleController {
                 .map(dto -> modelMapper.map(dto, ArticleItem.class))
                 .toList();
 
-        if(articleItems == null) {
+        if (articleItems.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
 

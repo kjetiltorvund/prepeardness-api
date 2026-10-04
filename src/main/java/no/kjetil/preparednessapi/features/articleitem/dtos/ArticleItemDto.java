@@ -24,4 +24,5 @@ public final class ArticleItemDto {
     private Boolean active;
     private Boolean expired;
     private String placement;
+    private boolean replaced;
 }

@@ -32,4 +32,5 @@ public class UpdateArticleDto {
     private Boolean active;
     private Boolean expired;
     private String placement;
+    private boolean replaced;
 }

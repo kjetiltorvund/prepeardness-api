@@ -18,6 +18,14 @@ public interface ArticleItemService {
 
     ArticleItem findById(Long id);
 
+    ArticleItem findByBarcode(String barCode);
+
+    ArticleItem findByQrCode(String qrCode);
+
+    ArticleItem findByExpirationDate(Date expirationDate);
+
+    ArticleItem findByBarcodeAndExpirationDate(String barcode, Date expirationDate);
+
     List<ArticleItem> findAll();
 
     ArticleItem save(ArticleItem articleItem);

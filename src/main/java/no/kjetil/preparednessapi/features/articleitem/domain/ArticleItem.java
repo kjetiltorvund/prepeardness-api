@@ -33,4 +33,6 @@ public class ArticleItem {
     private boolean active = true;
 
     private String placement;
+
+    private boolean replaced = false;
 }

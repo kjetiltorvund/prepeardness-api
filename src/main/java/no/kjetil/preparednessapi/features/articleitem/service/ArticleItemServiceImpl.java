@@ -8,6 +8,7 @@ import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.CreateArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
 import org.apache.commons.lang3.StringUtils;
+import org.jspecify.annotations.Nullable;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
 import org.slf4j.Logger;
@@ -71,16 +72,27 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             }
 
             List<ArticleItemDto> result = objectMapper.readValue(response.body(),
-                    new TypeReference<List<ArticleItemDto>>() {
+                    new TypeReference<>() {
                     });
 
-            return result.stream().map(item -> modelMapper.map(item, ArticleItem.class)).collect(Collectors.toList())
+            return result.stream().map(item -> modelMapper.map(item, ArticleItem.class)).toList()
                     .getFirst();
-        } catch (IOException | InterruptedException e) {
-            logger.error("Error creating ArticleItem", e);
-            e.printStackTrace();
+        } catch (IOException e) {
+            logRequestFailure("Create ArticleItem", request, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logRequestInterrupted("Create ArticleItem", request, e);
         }
         return null;
+    }
+
+    private void logRequestFailure(String operation, HttpRequest request, Exception e) {
+        logger.error("{} failed for {} {}: {} - {}", operation, request.method(), request.uri(),
+                e.getClass().getSimpleName(), e.getMessage(), e);
+    }
+
+    private void logRequestInterrupted(String operation, HttpRequest request, InterruptedException e) {
+        logger.warn("{} was interrupted for {} {}", operation, request.method(), request.uri(), e);
     }
 
     @SuppressWarnings("unused")
@@ -101,9 +113,11 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             }
             return articleItems.stream().map(article -> modelMapper.map(article, ArticleItem.class))
                     .collect(Collectors.toList());
-        } catch (IOException | InterruptedException e) {
-            logger.error("Error finding ArticleItem by name", e);
-            e.printStackTrace();
+        } catch (IOException e) {
+            logRequestFailure("Find ArticleItem by name '" + articleName + "'", request, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logRequestInterrupted("Find ArticleItem by name '" + articleName + "'", request, e);
         }
         return null;
     }
@@ -115,7 +129,8 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             return createPostRequest(uriPath, bodyAsJson);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e.getMessage());
+            logger.error("Unable to serialize CreateArticleItemDto for POST {}: {}", uriPath, e.getOriginalMessage(), e);
+            throw new RuntimeException("Unable to serialize CreateArticleItemDto", e);
         }
     }
 
@@ -138,9 +153,12 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             logger.info("Received ArticleItemDto: {}", dto);
             return modelMapper.map(dto, ArticleItem.class);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logRequestFailure("Read ArticleItem with id " + id, request, e);
+            throw new RuntimeException("Unable to read ArticleItem with id " + id, e);
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            Thread.currentThread().interrupt();
+            logRequestInterrupted("Read ArticleItem with id " + id, request, e);
+            throw new RuntimeException("Interrupted while reading ArticleItem with id " + id, e);
         }
     }
 
@@ -213,8 +231,13 @@ public class ArticleItemServiceImpl implements ArticleItemService {
                     .findFirst()
                     .map(item -> modelMapper.map(item, ArticleItem.class))
                     .orElseThrow(() -> new RuntimeException("Update response did not contain any article items"));
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            logRequestFailure("Update ArticleItem with id " + articleItem.getId(), request, e);
+            throw new RuntimeException("Unable to update ArticleItem with id " + articleItem.getId(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logRequestInterrupted("Update ArticleItem with id " + articleItem.getId(), request, e);
+            throw new RuntimeException("Interrupted while updating ArticleItem with id " + articleItem.getId(), e);
         }
     }
 
@@ -247,8 +270,13 @@ public class ArticleItemServiceImpl implements ArticleItemService {
                     .findFirst()
                     .map(item -> modelMapper.map(item, ArticleItem.class))
                     .orElseThrow(() -> new RuntimeException("Update response did not contain any article items"));
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            logRequestFailure("Update ArticleItem with id " + articleItem.getId(), request, e);
+            throw new RuntimeException("Unable to update ArticleItem with id " + articleItem.getId(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logRequestInterrupted("Update ArticleItem with id " + articleItem.getId(), request, e);
+            throw new RuntimeException("Interrupted while updating ArticleItem with id " + articleItem.getId(), e);
         }
     }
 
@@ -256,7 +284,8 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            logger.error("Unable to serialize {}: {}", payload.getClass().getSimpleName(), e.getOriginalMessage(), e);
+            throw new RuntimeException("Unable to serialize " + payload.getClass().getSimpleName(), e);
         }
     }
 
@@ -274,8 +303,13 @@ public class ArticleItemServiceImpl implements ArticleItemService {
                     || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
                 throw new RuntimeException("Unable to delete ArticleItem. Return code: " + response.statusCode());
             }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            logRequestFailure("Delete ArticleItem with id " + id, request, e);
+            throw new RuntimeException("Unable to delete ArticleItem with id " + id, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logRequestInterrupted("Delete ArticleItem with id " + id, request, e);
+            throw new RuntimeException("Interrupted while deleting ArticleItem with id " + id, e);
         }
     }
 
@@ -298,6 +332,10 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         String uriPath = basePath + "?id=eq." + id;
         HttpRequest request = createGetRequest(uriPath);
 
+        return getArticleItem(request);
+    }
+
+    private @Nullable ArticleItem getArticleItem(HttpRequest request) {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -315,11 +353,52 @@ public class ArticleItemServiceImpl implements ArticleItemService {
                     .map(item -> modelMapper.map(item, ArticleItem.class))
                     .orElse(null);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logRequestFailure("Find ArticleItem", request, e);
+            throw new RuntimeException("Unable to find ArticleItem", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
+            logRequestInterrupted("Find ArticleItem", request, e);
+            throw new RuntimeException("Interrupted while finding ArticleItem", e);
         }
+    }
+
+    @Override
+    public ArticleItem findByBarcode(String barCode) {
+        String uriPath = basePath + "?barcode.eq=" + barCode;
+
+        HttpRequest request = createGetRequest(uriPath);
+        return getArticleItem(request);
+    }
+
+    @Override
+    public ArticleItem findByQrCode(String qrCode) {
+        String uriPath = basePath + "?qr_code.eq=" + qrCode;
+
+        HttpRequest request = createGetRequest(uriPath);
+        return getArticleItem(request);
+    }
+
+    @Override
+    public ArticleItem findByExpirationDate(Date expirationDate) {
+        String uriPath = basePath + "?expiration_date.eq=" + expirationDate;
+
+        HttpRequest request = createGetRequest(uriPath);
+        return getArticleItem(request);
+    }
+
+    @Override
+    public ArticleItem findByBarcodeAndExpirationDate(String barcode, Date expirationDate) {
+        String uriPath = basePath + "?barcode=eq." + barcode;
+        // Date format 2026-10-20T22:00:00+00:00
+        uriPath += "&expiration_date=eq." + expirationDate.toInstant().toString();
+
+        HttpRequest request = createGetRequest(uriPath);
+        ArticleItem articleItem = getArticleItem(request);
+
+        if (articleItem == null) {
+            articleItem = findByBarcode(barcode);
+        }
+        return articleItem;
     }
 
     @Cacheable(value = "articles", key = "'all'")
@@ -343,10 +422,12 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             return modelMapper.map(articleItemDtos, new TypeToken<List<ArticleItem>>() {
             }.getType());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            logRequestFailure("Find all ArticleItems", request, e);
+            throw new RuntimeException("Unable to find all ArticleItems", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
+            logRequestInterrupted("Find all ArticleItems", request, e);
+            throw new RuntimeException("Interrupted while finding all ArticleItems", e);
         }
     }
 
@@ -380,9 +461,11 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             return modelMapper.map(saved.getFirst(), ArticleItem.class);
         } catch (IOException e) {
+            logRequestFailure("Save ArticleItem", request, e);
             throw new RuntimeException("Failed to save ArticleItem", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            logRequestInterrupted("Save ArticleItem", request, e);
             throw new RuntimeException("Interrupted while saving ArticleItem", e);
         }
     }
@@ -392,7 +475,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             ArticleItemDto articleItemDto = modelMapper.map(articleItem, ArticleItemDto.class);
             return Optional.of(objectMapper.writeValueAsString(articleItemDto));
         } catch (JsonProcessingException e) {
-            logger.error("Unable to serialize ArticleItem", e);
+            logger.error("Unable to serialize ArticleItem with id {}: {}", articleItem.getId(), e.getOriginalMessage(), e);
         }
 
         return Optional.empty();

@@ -11,17 +11,20 @@ import org.mockito.ArgumentCaptor;
 import org.modelmapper.ModelMapper;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandler;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
-import static java.net.http.HttpResponse.BodyHandler;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -242,5 +245,40 @@ class ArticleItemServiceImplTest {
 
         verify(objectMapper, never()).readValue(any(String.class), any(TypeReference.class));
         verify(modelMapper, never()).map(any(ArticleItemDto.class), eq(ArticleItem.class));
+    }
+
+    @Test
+    public void shouldCallForBarcodeAndExpirationDateCorrectly() throws IOException, InterruptedException {
+        // Arrange
+        String expectedPath = "/rest/v1/article_items?barcode=eq.416000336108&expiration_date=eq.2026-10-20T22:00:00Z";
+
+        HttpClient httpClient = mock(HttpClient.class);
+        @SuppressWarnings("unchecked")
+        HttpResponse<String> response = mock(java.net.http.HttpResponse.class);
+
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("[{\"id\":1,\"barcode\":\"416000336108\"}]");
+        when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenReturn(response);
+
+
+        ArticleItemService articleItemService = new ArticleItemServiceImpl(
+                getOptions(),
+                httpClient,
+                new ModelMapper(),
+                new JacksonConfig().objectMapper()
+        );
+
+        String barcode = "416000336108";
+        Date expirationDate = Date.from(OffsetDateTime.parse("2026-10-20T22:00:00+00:00").toInstant());
+
+
+        // Act
+        articleItemService.findByBarcodeAndExpirationDate(barcode, expirationDate);
+
+        ArgumentCaptor<HttpRequest> requestCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+        verify(httpClient).send(requestCaptor.capture(), any(BodyHandler.class));
+
+        URI uri = requestCaptor.getValue().uri();
+        assertEquals(expectedPath, uri.getPath() + "?" + uri.getQuery());
     }
 }
