@@ -116,7 +116,7 @@ public class ItemController {
             return ResponseEntity.notFound().build();
         }
 
-        itemService.deleteById(id);
+        itemService.deleteArticleItemById(id);
 
         return ResponseEntity.noContent().build();
     }

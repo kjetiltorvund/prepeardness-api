@@ -554,12 +554,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @CacheEvict(value = "articles", allEntries = true)
-    public void deleteById(Long id) {
-        deleteArticleItemById(id);
-    }
-
-    @Override
     public List<ArticleItem> findAllByExpirationDateAndReplaced(Date expirationDate, Boolean replaced) {
 
         String uriPath = basePath;

@@ -33,7 +33,5 @@ public interface ItemService {
 
     List<ArticleItem> saveAll(List<ArticleItem> articleItems);
 
-    void deleteById(Long id);
-
     List<ArticleItem> findAllByExpirationDateAndReplaced(Date expirationDate, Boolean replaced);
 }
