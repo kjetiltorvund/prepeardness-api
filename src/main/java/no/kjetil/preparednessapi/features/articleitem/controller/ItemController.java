@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping(path = "/articles", headers = "API-Version=v1")
+@RequestMapping(path = "/items", headers = "API-Version=v1")
 public class ItemController {
 
     private final ItemService itemService;

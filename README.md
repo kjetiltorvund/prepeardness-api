@@ -62,3 +62,17 @@ ssh -o IdentitiesOnly=yes \
   -i ~/.ssh/kamatera_deploy \
   deploy@45-248-37-116.cloud-xip.com
 ```
+
+# Opprydding av images på server
+
+Liste alle images:
+
+```bash
+ docker image ls
+```
+
+Fjerne alle ubrukte images:
+
+```bash
+ docker image prune -a -f
+```
