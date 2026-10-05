@@ -15,7 +15,7 @@ import java.util.Date;
 @Getter
 @Setter
 @Builder
-public class CreateArticleItemDto {
+public class CreateItemDto {
     @JsonProperty("article_name")
     private String articleName;
     @JsonProperty("created_at")

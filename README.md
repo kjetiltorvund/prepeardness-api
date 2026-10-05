@@ -15,8 +15,12 @@ Applikasjonen bruker Supabase REST API og trenger ikke `DATABASE_URL` eller et P
 E-post sendes med Gmail SMTP. `MAIL_USERNAME` er Gmail-adressen, og `MAIL_PASSWORD` er et Google app-passord.
 
 ```shell
-mvn spring-boot:run -Dspring.profiles.active=local
+mvn spring-boot:run
 ```
+
+`spring-boot:run` aktiverer `local`-profilen automatisk (konfigurert i `pom.xml`). Kjører du fra IDE-en, sett
+`spring.profiles.active=local` (f.eks. miljøvariabelen `SPRING_PROFILES_ACTIVE=local`) og bruk prosjektroten som
+arbeidskatalog.
 
 ### Lokal PostgreSQL-integrasjonstest
 

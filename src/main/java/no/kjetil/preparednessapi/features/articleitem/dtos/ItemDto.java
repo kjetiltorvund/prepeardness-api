@@ -1,5 +1,6 @@
 package no.kjetil.preparednessapi.features.articleitem.dtos;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
@@ -10,9 +11,10 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public final class ArticleItemDto {
+public final class ItemDto {
     private long id;
-    @JsonProperty("article_name")
+    @JsonProperty("name")
+    @JsonAlias("article_name")
     private String articleName;
     @JsonProperty("created_at")
     private Date createdAt;

@@ -4,8 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
-import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
-import no.kjetil.preparednessapi.features.articleitem.dtos.CreateArticleItemDto;
+import no.kjetil.preparednessapi.features.articleitem.dtos.CreateGroceryResponse;
+import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemDto;
+import no.kjetil.preparednessapi.features.articleitem.dtos.ItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
@@ -21,19 +22,22 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class ArticleItemServiceImpl implements ArticleItemService {
+public class ItemServiceImpl implements ItemService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ArticleItemServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(ItemServiceImpl.class);
     private final ModelMapper modelMapper;
     private final ObjectMapper objectMapper;
 
@@ -43,8 +47,8 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     private final String apiKeyParameter = "apiKey";
     private final String basePath = "/rest/v1/article_items";
 
-    public ArticleItemServiceImpl(
-            ArticleItemServiceProperties options,
+    public ItemServiceImpl(
+            ItemServiceProperties options,
             HttpClient httpClient,
             ModelMapper modelMapper,
             ObjectMapper objectMapper) {
@@ -59,9 +63,9 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     @CacheEvict(value = "articles", allEntries = true)
     public ArticleItem createArticleItem(ArticleItem articleItem) {
 
-        CreateArticleItemDto createArticleItemDto = modelMapper.map(articleItem, CreateArticleItemDto.class);
+        CreateItemDto createItemDto = modelMapper.map(articleItem, CreateItemDto.class);
 
-        HttpRequest request = createPostRequest(createArticleItemDto);
+        HttpRequest request = createPostRequest(createItemDto);
 
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -71,7 +75,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
                 throw new RuntimeException(message);
             }
 
-            List<ArticleItemDto> result = objectMapper.readValue(response.body(),
+            List<ItemDto> result = objectMapper.readValue(response.body(),
                     new TypeReference<>() {
                     });
 
@@ -106,7 +110,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             String body = response.body();
 
-            List<ArticleItemDto> articleItems = objectMapper.readValue(body, new TypeReference<>() {
+            List<ItemDto> articleItems = objectMapper.readValue(body, new TypeReference<>() {
             });
             if (articleItems.isEmpty()) {
                 return null;
@@ -122,7 +126,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         return null;
     }
 
-    private HttpRequest createPostRequest(CreateArticleItemDto articleItem) {
+    private HttpRequest createPostRequest(CreateItemDto articleItem) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             String bodyAsJson = objectMapper.writeValueAsString(articleItem);
@@ -149,7 +153,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             // Assuming the response is a JSON array and we want the first item
             body = body.substring(1, body.length() - 1); // Remove the surrounding
-            ArticleItemDto dto = objectMapper.readValue(body, ArticleItemDto.class);
+            ItemDto dto = objectMapper.readValue(body, ItemDto.class);
             logger.info("Received ArticleItemDto: {}", dto);
             return modelMapper.map(dto, ArticleItem.class);
         } catch (IOException e) {
@@ -163,10 +167,11 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     }
 
     private HttpRequest createGetRequest(String uriPath) {
-        String uri = apiBaseUrl + uriPath;
+        String url = apiBaseUrl + uriPath;
+        URI uri = URI.create(url);
         return HttpRequest.newBuilder()
                 .GET()
-                .uri(URI.create(uri))
+                .uri(uri)
                 .timeout(Duration.ofSeconds(30))
                 .headers(
                         apiKeyParameter, apiKey)
@@ -222,7 +227,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
                 throw new RuntimeException(message);
             }
 
-            List<ArticleItemDto> updatedItems = objectMapper.readValue(response.body(),
+            List<ItemDto> updatedItems = objectMapper.readValue(response.body(),
                     new TypeReference<>() {
                     });
 
@@ -261,7 +266,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
                 throw new RuntimeException(message);
             }
 
-            List<ArticleItemDto> updatedItems = objectMapper.readValue(response.body(),
+            List<ItemDto> updatedItems = objectMapper.readValue(response.body(),
                     new TypeReference<>() {
                     });
 
@@ -343,7 +348,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
                 throw new RuntimeException("Unable to find ArticleItem. Return code: " + response.statusCode());
             }
 
-            List<ArticleItemDto> articleItems = objectMapper.readValue(
+            List<ItemDto> articleItems = objectMapper.readValue(
                     response.body(), new TypeReference<>() {
                     });
 
@@ -362,8 +367,8 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     }
 
     @Override
-    public ArticleItem findByBarcode(String barCode) {
-        String uriPath = basePath + "?barcode.eq=" + barCode;
+    public ArticleItem findByBarcode(String barcode) {
+        String uriPath = basePath + "?barcode=eq." + barcode;
 
         HttpRequest request = createGetRequest(uriPath);
         return getArticleItem(request);
@@ -371,7 +376,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
     @Override
     public ArticleItem findByQrCode(String qrCode) {
-        String uriPath = basePath + "?qr_code.eq=" + qrCode;
+        String uriPath = basePath + "?qr_code=eq." + qrCode;
 
         HttpRequest request = createGetRequest(uriPath);
         return getArticleItem(request);
@@ -379,7 +384,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
     @Override
     public ArticleItem findByExpirationDate(Date expirationDate) {
-        String uriPath = basePath + "?expiration_date.eq=" + expirationDate;
+        String uriPath = basePath + "?expiration_date=eq." + expirationDate.toInstant().toString();
 
         HttpRequest request = createGetRequest(uriPath);
         return getArticleItem(request);
@@ -414,13 +419,19 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                throw new RuntimeException(String.format("Request %s %s failed. Return code: %d, body: %s",
+                        request.method(), request.uri(), response.statusCode(), response.body()));
+            }
+
             String body = response.body();
 
-            List<ArticleItemDto> articleItemDtos = objectMapper.readValue(body,
+            List<ItemDto> itemDtos = objectMapper.readValue(body,
                     new TypeReference<>() {
                     });
 
-            return modelMapper.map(articleItemDtos, new TypeToken<List<ArticleItem>>() {
+            return modelMapper.map(itemDtos, new TypeToken<List<ArticleItem>>() {
             }.getType());
         } catch (IOException e) {
             logRequestFailure("Find all ArticleItems", request, e);
@@ -434,59 +445,112 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
     @Override
     @CacheEvict(value = "articles", allEntries = true)
-    public ArticleItem save(ArticleItem articleItem) {
+    public CreateGroceryResponse save(ArticleItem articleItem) {
+        // Insert first, so the existing items are only marked as replaced once the new one exists.
+        ItemDto saved = insertItems(List.of(articleItem)).getFirst();
 
-        if (articleItem.getCreatedAt() == null) {
-            articleItem.setCreatedAt(new Date());
-        }
+        long[] replacedIds = StringUtils.isBlank(articleItem.getBarcode())
+                ? new long[0]
+                : markExpiredAsReplaced(articleItem.getBarcode(), List.of(saved.getId()));
 
-        String uriPath = "/rest/v1/article_items";
-
-        String body = getBody(articleItem).orElse("");
-
-        HttpRequest request = createPostRequest(uriPath, body);
-
-        try {
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                logger.error("Failed to save ArticleItem. Status code: {}, Response body: {}", response.statusCode(),
-                        response.body());
-                throw new RuntimeException("Failed to save ArticleItem. Status code: " + response.statusCode());
-            }
-
-            // "Prefer: return=representation" makes the database return the saved row, including its id.
-            List<ArticleItemDto> saved = objectMapper.readValue(response.body(),
-                    new TypeReference<>() {
-                    });
-
-            return modelMapper.map(saved.getFirst(), ArticleItem.class);
-        } catch (IOException e) {
-            logRequestFailure("Save ArticleItem", request, e);
-            throw new RuntimeException("Failed to save ArticleItem", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logRequestInterrupted("Save ArticleItem", request, e);
-            throw new RuntimeException("Interrupted while saving ArticleItem", e);
-        }
-    }
-
-    private Optional<String> getBody(ArticleItem articleItem) {
-        try {
-            ArticleItemDto articleItemDto = modelMapper.map(articleItem, ArticleItemDto.class);
-            return Optional.of(objectMapper.writeValueAsString(articleItemDto));
-        } catch (JsonProcessingException e) {
-            logger.error("Unable to serialize ArticleItem with id {}: {}", articleItem.getId(), e.getOriginalMessage(), e);
-        }
-
-        return Optional.empty();
+        return new CreateGroceryResponse(saved, replacedIds);
     }
 
     @Override
     @CacheEvict(value = "articles", allEntries = true)
     public List<ArticleItem> saveAll(List<ArticleItem> articleItems) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'saveAll'");
+        if (articleItems.isEmpty()) {
+            return List.of();
+        }
+
+        // PostgREST inserts the whole array in one statement, so either all items are saved or none are.
+        List<ItemDto> savedItems = insertItems(articleItems);
+
+        List<Long> savedIds = savedItems.stream().map(ItemDto::getId).toList();
+
+        articleItems.stream()
+                .map(ArticleItem::getBarcode)
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .forEach(barcode -> markExpiredAsReplaced(barcode, savedIds));
+
+        return savedItems.stream()
+                .map(item -> modelMapper.map(item, ArticleItem.class))
+                .toList();
+    }
+
+    private List<ItemDto> insertItems(List<ArticleItem> articleItems) {
+        List<CreateItemDto> createItemDtos = articleItems.stream()
+                .map(this::toCreateItemDto)
+                .toList();
+
+        HttpRequest request = createPostRequest(basePath, convertBodyToString(createItemDtos));
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                logger.error("Failed to save ArticleItems. Status code: {}, Response body: {}", response.statusCode(),
+                        response.body());
+                throw new RuntimeException("Failed to save ArticleItems. Status code: " + response.statusCode());
+            }
+
+            // "Prefer: return=representation" makes the database return the saved rows as an array, including the id.
+            List<ItemDto> savedItems = objectMapper.readValue(response.body(),
+                    new TypeReference<>() {
+                    });
+
+            if (savedItems.size() != articleItems.size()) {
+                throw new RuntimeException(String.format("Expected %d saved article items, but got %d",
+                        articleItems.size(), savedItems.size()));
+            }
+            return savedItems;
+        } catch (IOException e) {
+            logRequestFailure("Save ArticleItems", request, e);
+            throw new RuntimeException("Failed to save ArticleItems", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logRequestInterrupted("Save ArticleItems", request, e);
+            throw new RuntimeException("Interrupted while saving ArticleItems", e);
+        }
+    }
+
+    private CreateItemDto toCreateItemDto(ArticleItem articleItem) {
+        Date createdAt = articleItem.getCreatedAt() != null ? articleItem.getCreatedAt() : new Date();
+
+        return CreateItemDto.builder()
+                .articleName(articleItem.getArticleName())
+                .createdAt(createdAt.toInstant().atOffset(ZoneOffset.UTC))
+                .expirationDate(articleItem.getExpirationDate())
+                .barcode(articleItem.getBarcode())
+                .qrCode(articleItem.getQrCode())
+                .active(articleItem.isActive())
+                .expired(articleItem.isExpired())
+                .placement(articleItem.getPlacement())
+                .build();
+    }
+
+    /**
+     * Marks the expired, not yet replaced items with the given barcode as replaced.
+     * The newly saved items are excluded, in case they already have passed their expiration date.
+     *
+     * @return the ids of the items that were marked as replaced
+     */
+    private long[] markExpiredAsReplaced(String barcode, List<Long> newItemIds) {
+        String excludedIds = newItemIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+
+        String uriPath = basePath
+                + "?barcode=eq." + URLEncoder.encode(barcode, StandardCharsets.UTF_8)
+                + "&replaced=eq.false"
+                + "&expiration_date=lt." + Instant.now()
+                + "&id=not.in.(" + excludedIds + ")";
+
+        HttpRequest request = createPatchRequest(uriPath, "{\"replaced\":true}");
+
+        return getArticleItems(request).stream()
+                .mapToLong(ArticleItem::getId)
+                .toArray();
     }
 
     @Override

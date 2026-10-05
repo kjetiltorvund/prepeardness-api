@@ -24,16 +24,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest 
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = DotenvTestInitializer.class)
-class ArticleItemServiceImplITest {
+class ItemServiceImplITest {
 
-    @Autowired 
-    private ArticleItemServiceProperties options;
+    @Autowired
+    private ItemServiceProperties options;
 
-    private ArticleItemService sut;
+    private ItemService sut;
 
     @BeforeEach 
     public void setup() {
-        sut = new ArticleItemServiceImpl(
+        sut = new ItemServiceImpl(
             options,
             HttpClient.newHttpClient(), 
             new ModelMapper(), 

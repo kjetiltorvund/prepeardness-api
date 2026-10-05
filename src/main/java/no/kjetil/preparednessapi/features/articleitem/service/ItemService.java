@@ -1,11 +1,12 @@
 package no.kjetil.preparednessapi.features.articleitem.service;
 
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
+import no.kjetil.preparednessapi.features.articleitem.dtos.CreateGroceryResponse;
 
 import java.util.Date;
 import java.util.List;
 
-public interface ArticleItemService {
+public interface ItemService {
     ArticleItem createArticleItem(ArticleItem articleItem);
 
     ArticleItem readArticleItemById(long id);
@@ -28,7 +29,7 @@ public interface ArticleItemService {
 
     List<ArticleItem> findAll();
 
-    ArticleItem save(ArticleItem articleItem);
+    CreateGroceryResponse save(ArticleItem articleItem);
 
     List<ArticleItem> saveAll(List<ArticleItem> articleItems);
 
