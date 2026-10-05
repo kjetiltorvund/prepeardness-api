@@ -61,7 +61,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
         CreateArticleItemDto createArticleItemDto = modelMapper.map(articleItem, CreateArticleItemDto.class);
 
-        HttpRequest request = createPostRequest(basePath, createArticleItemDto);
+        HttpRequest request = createPostRequest(createArticleItemDto);
 
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -106,7 +106,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             String body = response.body();
 
-            List<ArticleItemDto> articleItems = objectMapper.readValue(body, new TypeReference<List<ArticleItemDto>>() {
+            List<ArticleItemDto> articleItems = objectMapper.readValue(body, new TypeReference<>() {
             });
             if (articleItems.isEmpty()) {
                 return null;
@@ -122,14 +122,14 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         return null;
     }
 
-    private HttpRequest createPostRequest(String uriPath, CreateArticleItemDto articleItem) {
+    private HttpRequest createPostRequest(CreateArticleItemDto articleItem) {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             String bodyAsJson = objectMapper.writeValueAsString(articleItem);
 
-            return createPostRequest(uriPath, bodyAsJson);
+            return createPostRequest("/rest/v1/article_items", bodyAsJson);
         } catch (JsonProcessingException e) {
-            logger.error("Unable to serialize CreateArticleItemDto for POST {}: {}", uriPath, e.getOriginalMessage(), e);
+            logger.error("Unable to serialize CreateArticleItemDto for POST {}: {}", "/rest/v1/article_items", e.getOriginalMessage(), e);
             throw new RuntimeException("Unable to serialize CreateArticleItemDto", e);
         }
     }
@@ -164,14 +164,13 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
     private HttpRequest createGetRequest(String uriPath) {
         String uri = apiBaseUrl + uriPath;
-        HttpRequest request = HttpRequest.newBuilder()
+        return HttpRequest.newBuilder()
                 .GET()
                 .uri(URI.create(uri))
                 .timeout(Duration.ofSeconds(30))
                 .headers(
                         apiKeyParameter, apiKey)
                 .build();
-        return request;
     }
 
     private HttpRequest createPostRequest(String uriPath, String body) {
@@ -198,10 +197,10 @@ public class ArticleItemServiceImpl implements ArticleItemService {
         String uri = apiBaseUrl + uriPath;
 
         return HttpRequest.newBuilder()
-        .method(HttpMethod.PATCH.name(), HttpRequest.BodyPublishers.ofString(body))
-        .uri(URI.create(uri))
-        .headers(apiKeyParameter, apiKey, "Prefer", "return=representation")
-        .build();
+                .method(HttpMethod.PATCH.name(), HttpRequest.BodyPublishers.ofString(body))
+                .uri(URI.create(uri))
+                .headers(apiKeyParameter, apiKey, "Prefer", "return=representation")
+                .build();
     }
 
     public ArticleItem patchUpdateArticleItem(ArticleItem articleItem) {
@@ -224,7 +223,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             }
 
             List<ArticleItemDto> updatedItems = objectMapper.readValue(response.body(),
-                    new TypeReference<List<ArticleItemDto>>() {
+                    new TypeReference<>() {
                     });
 
             return updatedItems.stream()
@@ -263,7 +262,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             }
 
             List<ArticleItemDto> updatedItems = objectMapper.readValue(response.body(),
-                    new TypeReference<List<ArticleItemDto>>() {
+                    new TypeReference<>() {
                     });
 
             return updatedItems.stream()
@@ -345,7 +344,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
             }
 
             List<ArticleItemDto> articleItems = objectMapper.readValue(
-                    response.body(), new TypeReference<List<ArticleItemDto>>() {
+                    response.body(), new TypeReference<>() {
                     });
 
             return articleItems.stream()
@@ -408,15 +407,17 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
         HttpRequest request = createGetRequest(uriPath);
 
+        return getArticleItems(request);
+    }
+
+    private List<ArticleItem> getArticleItems(HttpRequest request) {
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             String body = response.body();
 
-            ObjectMapper objectMapper = new ObjectMapper();
-
             List<ArticleItemDto> articleItemDtos = objectMapper.readValue(body,
-                    new TypeReference<List<ArticleItemDto>>() {
+                    new TypeReference<>() {
                     });
 
             return modelMapper.map(articleItemDtos, new TypeToken<List<ArticleItem>>() {
@@ -456,7 +457,7 @@ public class ArticleItemServiceImpl implements ArticleItemService {
 
             // "Prefer: return=representation" makes the database return the saved row, including its id.
             List<ArticleItemDto> saved = objectMapper.readValue(response.body(),
-                    new TypeReference<List<ArticleItemDto>>() {
+                    new TypeReference<>() {
                     });
 
             return modelMapper.map(saved.getFirst(), ArticleItem.class);
@@ -493,5 +494,28 @@ public class ArticleItemServiceImpl implements ArticleItemService {
     public void deleteById(Long id) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'deleteById'");
+    }
+
+    @Override
+    public List<ArticleItem> findAllByExpirationDateAndReplaced(Date expirationDate, Boolean replaced) {
+
+        String uriPath = basePath;
+
+        if (expirationDate != null) {
+            uriPath += "?expiration_date=eq." + expirationDate.toInstant().toString();
+        }
+
+        if (replaced != null) {
+            if (uriPath.endsWith("article_items")) {
+                uriPath += "?";
+            } else {
+                uriPath += "&";
+            }
+            uriPath += "replaced=eq." + replaced;
+        }
+
+        HttpRequest request = createGetRequest(uriPath);
+
+        return getArticleItems(request);
     }
 }

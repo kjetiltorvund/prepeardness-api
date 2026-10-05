@@ -30,21 +30,23 @@ public class ArticleController {
 
     @GetMapping(path = "/{id}")
     public ResponseEntity<ArticleItemDto> getArticleById(
-            @PathVariable @NonNull Long id,
-            @RequestParam(required = false, defaultValue = "false") Boolean replaces) {
-        ArticleItemDto itemDto = convertToDto(articleItemService.findById(id));
+            @PathVariable @NonNull Long id) {
+        ArticleItem byId = articleItemService.findById(id);
+        ArticleItemDto itemDto = convertToDto(byId);
         return ResponseEntity.ok(itemDto);
     }
 
     @GetMapping(path = "/barcode/{barcode}")
-    public ResponseEntity<ArticleItemDto> getArticleByBarcode(@PathVariable String barCode, @RequestParam Date expirationDate) {
-        ArticleItemDto itemDto = convertToDto(articleItemService.findByBarcodeAndExpirationDate(barCode, expirationDate));
+    public ResponseEntity<ArticleItemDto> getArticleByBarcode(@PathVariable String barcode, @RequestParam Date expirationDate) {
+        ArticleItemDto itemDto = convertToDto(articleItemService.findByBarcodeAndExpirationDate(barcode, expirationDate));
         return ResponseEntity.ok(itemDto);
     }
 
     @GetMapping
-    public ResponseEntity<List<ArticleItemDto>> getAll() {
-        List<ArticleItem> items = articleItemService.findAll();
+    public ResponseEntity<List<ArticleItemDto>> getAll(
+            @RequestParam(required = false) Date expirationDate,
+            @RequestParam(required = false, defaultValue = "false") Boolean replaced) {
+        List<ArticleItem> items = articleItemService.findAllByExpirationDateAndReplaced(expirationDate, replaced);
 
         List<ArticleItemDto> articleItemDtos = items.stream()
                 .map(this::convertToDto)

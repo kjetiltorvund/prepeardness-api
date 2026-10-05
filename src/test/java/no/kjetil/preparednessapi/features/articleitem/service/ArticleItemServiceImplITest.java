@@ -13,9 +13,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.net.http.HttpClient;
-import java.text.ParseException;
 import java.time.OffsetDateTime;
 import java.util.Date;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -59,13 +59,35 @@ class ArticleItemServiceImplITest {
     }
 
     @Test
-    public void shouldGetItemByBarcodeAndExpirationDate() throws ParseException {
+    public void shouldGetItemByBarcodeAndExpirationDate() {
         // Arrange
         String barcode = "416000336108";
         Date expirationDate = Date.from(OffsetDateTime.parse("2026-10-20T22:00:00+00:00").toInstant());
 
         // Act
         ArticleItem actual = sut.findByBarcodeAndExpirationDate(barcode, expirationDate);
+
+        // Assert
+        assertNotNull(actual);
+    }
+
+    @Test
+    public void shouldGetAllArticlesFilteredOnExpirationDateAndReplaced() {
+        // Arrange
+        Date expirationDate = Date.from(OffsetDateTime.parse("2026-10-20T22:00:00+00:00").toInstant());
+
+
+        // Act
+        List<ArticleItem> actual = sut.findAllByExpirationDateAndReplaced(expirationDate, true);
+
+        // Assert
+        assertNotNull(actual);
+    }
+
+    @Test
+    public void shouldGetAllArticlesFilteredOnReplaced() {
+        // Act
+        List<ArticleItem> actual = sut.findAllByExpirationDateAndReplaced(null, true);
 
         // Assert
         assertNotNull(actual);
