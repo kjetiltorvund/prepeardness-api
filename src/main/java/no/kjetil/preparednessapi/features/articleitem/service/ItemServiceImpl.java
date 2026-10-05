@@ -556,8 +556,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @CacheEvict(value = "articles", allEntries = true)
     public void deleteById(Long id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'deleteById'");
+        deleteArticleItemById(id);
     }
 
     @Override
