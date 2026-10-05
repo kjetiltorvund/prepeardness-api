@@ -1,6 +1,7 @@
 package no.kjetil.preparednessapi.features.articleitem.controller;
 
 import jakarta.validation.Valid;
+import no.kjetil.preparednessapi.config.exceptionhandlers.ResourceNotFoundException;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ArticleItemDto;
 import no.kjetil.preparednessapi.features.articleitem.service.ArticleItemService;
@@ -32,6 +33,11 @@ public class ArticleController {
     public ResponseEntity<ArticleItemDto> getArticleById(
             @PathVariable @NonNull Long id) {
         ArticleItem byId = articleItemService.findById(id);
+
+        if (byId == null) {
+            throw new ResourceNotFoundException("Article with " + id + " not found");
+        }
+
         ArticleItemDto itemDto = convertToDto(byId);
         return ResponseEntity.ok(itemDto);
     }
