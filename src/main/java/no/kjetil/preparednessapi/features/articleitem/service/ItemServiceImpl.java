@@ -318,8 +318,9 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private HttpRequest createDeleteRequest(String uriPath) {
+        String url = apiBaseUrl + uriPath;
         return HttpRequest.newBuilder()
-                .uri(URI.create(uriPath))
+                .uri(URI.create(url))
                 .DELETE()
                 .build();
     }
