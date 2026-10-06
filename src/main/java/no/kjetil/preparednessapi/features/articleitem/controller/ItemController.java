@@ -3,7 +3,7 @@ package no.kjetil.preparednessapi.features.articleitem.controller;
 import jakarta.validation.Valid;
 import no.kjetil.preparednessapi.config.exceptionhandlers.ResourceNotFoundException;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
-import no.kjetil.preparednessapi.features.articleitem.dtos.CreateGroceryResponse;
+import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemResponse;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ItemDto;
 import no.kjetil.preparednessapi.features.articleitem.service.ItemService;
 import org.modelmapper.ModelMapper;
@@ -62,14 +62,14 @@ public class ItemController {
     }
 
     @PostMapping
-    public ResponseEntity<CreateGroceryResponse> createArticleItem(@Valid @RequestBody ItemDto requestBody) {
+    public ResponseEntity<CreateItemResponse> createArticleItem(@Valid @RequestBody ItemDto requestBody) {
         ArticleItem articleItem = modelMapper.map(requestBody, ArticleItem.class);
 
         if (articleItem == null) {
             return ResponseEntity.badRequest().build();
         }
 
-        CreateGroceryResponse response = itemService.save(articleItem);
+        CreateItemResponse response = itemService.save(articleItem);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

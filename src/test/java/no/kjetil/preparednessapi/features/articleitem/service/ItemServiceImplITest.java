@@ -3,6 +3,7 @@ package no.kjetil.preparednessapi.features.articleitem.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.kjetil.preparednessapi.DotenvTestInitializer;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
+import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -17,11 +18,10 @@ import java.time.OffsetDateTime;
 import java.util.Date;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Disabled("Relies on env variables")
-@SpringBootTest 
+@SpringBootTest
 @ActiveProfiles("test")
 @ContextConfiguration(initializers = DotenvTestInitializer.class)
 class ItemServiceImplITest {
@@ -29,15 +29,18 @@ class ItemServiceImplITest {
     @Autowired
     private ItemServiceProperties options;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private ItemService sut;
 
-    @BeforeEach 
+    @BeforeEach
     public void setup() {
         sut = new ItemServiceImpl(
-            options,
-            HttpClient.newHttpClient(), 
-            new ModelMapper(), 
-            new ObjectMapper());
+                options,
+                HttpClient.newHttpClient(),
+                new ModelMapper(),
+                objectMapper);
     }
 
 
@@ -91,5 +94,40 @@ class ItemServiceImplITest {
 
         // Assert
         assertNotNull(actual);
+    }
+
+    @Test
+    public void shouldDeleteArticle() {
+        // Arrange
+        ArticleItem articleItem = ArticleItem.builder()
+                .articleName("Test item")
+                .build();
+
+        CreateItemResponse save = sut.save(articleItem);
+
+        // Act
+        sut.deleteArticleItemById(save.article().getId());
+
+        ArticleItem actual = sut.findById(save.article().getId());
+
+        // Assert
+        assertNull(actual);
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenTryingToDeleteNonExistingItem() {
+        // Arrange
+        long id = Long.MAX_VALUE;
+
+        // Act
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            sut.deleteArticleItemById(id);
+        });
+
+        String expectedMessage = "No items with id " + id + " was deleted";
+        String actualMessage = exception.getMessage();
+
+        // Assert
+        assertTrue(actualMessage.contains(expectedMessage));
     }
 }

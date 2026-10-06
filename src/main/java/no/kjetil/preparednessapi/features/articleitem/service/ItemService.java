@@ -1,7 +1,8 @@
 package no.kjetil.preparednessapi.features.articleitem.service;
 
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
-import no.kjetil.preparednessapi.features.articleitem.dtos.CreateGroceryResponse;
+import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemResponse;
+import no.kjetil.preparednessapi.features.articleitem.dtos.ItemDto;
 
 import java.util.Date;
 import java.util.List;
@@ -13,7 +14,7 @@ public interface ItemService {
 
     ArticleItem updateArticleItem(ArticleItem articleItem);
 
-    void deleteArticleItemById(long id);
+    List<ItemDto> deleteArticleItemById(long id);
 
     List<ArticleItem> findAllByDatePassedExpirationDate(Date date);
 
@@ -29,7 +30,7 @@ public interface ItemService {
 
     List<ArticleItem> findAll();
 
-    CreateGroceryResponse save(ArticleItem articleItem);
+    CreateItemResponse save(ArticleItem articleItem);
 
     List<ArticleItem> saveAll(List<ArticleItem> articleItems);
 

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
-import no.kjetil.preparednessapi.features.articleitem.dtos.CreateGroceryResponse;
 import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemDto;
+import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemResponse;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
 import org.apache.commons.lang3.StringUtils;
@@ -127,7 +127,6 @@ public class ItemServiceImpl implements ItemService {
     }
 
     private HttpRequest createPostRequest(CreateItemDto articleItem) {
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
             String bodyAsJson = objectMapper.writeValueAsString(articleItem);
 
@@ -295,7 +294,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @CacheEvict(value = "articles", allEntries = true)
-    public void deleteArticleItemById(long id) {
+    public List<ItemDto> deleteArticleItemById(long id) {
         String uriPath = basePath + "?id=eq." + id;
 
         HttpRequest request = createDeleteRequest(uriPath);
@@ -307,6 +306,16 @@ public class ItemServiceImpl implements ItemService {
                     || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
                 throw new RuntimeException("Unable to delete ArticleItem. Return code: " + response.statusCode());
             }
+
+            if ("[]".equals(response.body().trim())) {
+                throw new RuntimeException("No items with id " + id + " was deleted");
+            }
+
+            List<ItemDto> articleItems = objectMapper.readValue(
+                    response.body(), new TypeReference<>() {
+                    });
+
+            return articleItems;
         } catch (IOException e) {
             logRequestFailure("Delete ArticleItem with id " + id, request, e);
             throw new RuntimeException("Unable to delete ArticleItem with id " + id, e);
@@ -322,6 +331,8 @@ public class ItemServiceImpl implements ItemService {
         return HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .DELETE()
+                .timeout(Duration.ofSeconds(30))
+                .headers(apiKeyParameter, apiKey, "Prefer", "return=representation")
                 .build();
     }
 
@@ -446,7 +457,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @CacheEvict(value = "articles", allEntries = true)
-    public CreateGroceryResponse save(ArticleItem articleItem) {
+    public CreateItemResponse save(ArticleItem articleItem) {
         // Insert first, so the existing items are only marked as replaced once the new one exists.
         ItemDto saved = insertItems(List.of(articleItem)).getFirst();
 
@@ -454,7 +465,7 @@ public class ItemServiceImpl implements ItemService {
                 ? new long[0]
                 : markExpiredAsReplaced(articleItem.getBarcode(), List.of(saved.getId()));
 
-        return new CreateGroceryResponse(saved, replacedIds);
+        return new CreateItemResponse(saved, replacedIds);
     }
 
     @Override

@@ -2,7 +2,7 @@ package no.kjetil.preparednessapi.features.articleitem.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record CreateGroceryResponse(
+public record CreateItemResponse(
         ItemDto article,
         @JsonProperty("replace_ids") long[] replaceIds) {
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.kjetil.preparednessapi.config.JacksonConfig;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
-import no.kjetil.preparednessapi.features.articleitem.dtos.CreateGroceryResponse;
+import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemResponse;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
 import org.junit.jupiter.api.Test;
@@ -123,7 +123,7 @@ class ItemServiceImplTest {
                 new ModelMapper(),
                 objectMapper);
 
-        CreateGroceryResponse result = itemService.save(ArticleItem.builder()
+        CreateItemResponse result = itemService.save(ArticleItem.builder()
                 .articleName("Pepperonini")
                 .expirationDate(Date.from(Instant.parse("2030-01-02T03:04:05Z")))
                 .qrCode("qr-123")
@@ -173,7 +173,7 @@ class ItemServiceImplTest {
                 new ModelMapper(),
                 new JacksonConfig().objectMapper());
 
-        CreateGroceryResponse result = itemService.save(ArticleItem.builder()
+        CreateItemResponse result = itemService.save(ArticleItem.builder()
                 .articleName("Pepperonini")
                 .barcode("416000336108")
                 .build());
