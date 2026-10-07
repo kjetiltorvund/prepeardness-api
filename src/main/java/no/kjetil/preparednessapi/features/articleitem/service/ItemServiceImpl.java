@@ -341,7 +341,7 @@ public class ItemServiceImpl implements ItemService {
         // Replaced items have already been dealt with, so they are left out.
         String uriPath = basePath
                 + "?expiration_date=lt." + date.toInstant()
-                + "&replaced=eq.false";
+                + "&replaced=eq.false&active=eq.true";
 
         HttpRequest request = createGetRequest(uriPath);
         return getArticleItems(request);
