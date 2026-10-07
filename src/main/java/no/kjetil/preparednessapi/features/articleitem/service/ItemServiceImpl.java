@@ -338,8 +338,13 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ArticleItem> findAllByDatePassedExpirationDate(Date date) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findAllByDatePassedExpirationDate'");
+        // Replaced items have already been dealt with, so they are left out.
+        String uriPath = basePath
+                + "?expiration_date=lt." + date.toInstant()
+                + "&replaced=eq.false";
+
+        HttpRequest request = createGetRequest(uriPath);
+        return getArticleItems(request);
     }
 
     @Cacheable(value = "articles", key = "#id")
