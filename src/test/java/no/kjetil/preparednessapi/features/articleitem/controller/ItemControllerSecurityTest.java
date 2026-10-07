@@ -4,6 +4,8 @@ import no.kjetil.preparednessapi.config.ApplicationConfig;
 import no.kjetil.preparednessapi.config.ModelMapperConfig;
 import no.kjetil.preparednessapi.config.security.GoogleJwtAuthenticationConverter;
 import no.kjetil.preparednessapi.config.security.SecurityConfig;
+import no.kjetil.preparednessapi.features.appuser.domain.AppUserRole;
+import no.kjetil.preparednessapi.features.appuser.service.AppUserService;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.service.ItemService;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -29,8 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = ItemController.class, properties = {
-        "app.security.admins=admin@example.com",
-        "app.security.users=user@example.com"
+        "app.security.admins=admin@example.com"
 })
 @Import({SecurityConfig.class, GoogleJwtAuthenticationConverter.class, ApplicationConfig.class, ModelMapperConfig.class})
 class ItemControllerSecurityTest {
@@ -46,6 +48,9 @@ class ItemControllerSecurityTest {
     private ItemService itemService;
 
     @MockitoBean
+    private AppUserService appUserService;
+
+    @MockitoBean
     private JwtDecoder jwtDecoder;
 
     @BeforeEach
@@ -54,6 +59,9 @@ class ItemControllerSecurityTest {
         doReturn(googleJwt(ADMIN_TOKEN, "admin@example.com")).when(jwtDecoder).decode(ADMIN_TOKEN);
         doReturn(googleJwt(USER_TOKEN, "user@example.com")).when(jwtDecoder).decode(USER_TOKEN);
         doReturn(googleJwt(STRANGER_TOKEN, "stranger@example.com")).when(jwtDecoder).decode(STRANGER_TOKEN);
+
+        when(appUserService.findActiveRole(anyString())).thenReturn(Optional.empty());
+        when(appUserService.findActiveRole("user@example.com")).thenReturn(Optional.of(AppUserRole.USER));
 
         when(itemService.findAllByExpirationDateAndReplaced(null, false)).thenReturn(List.of());
         when(itemService.findById(1L)).thenReturn(ArticleItem.builder().id(1L).build());

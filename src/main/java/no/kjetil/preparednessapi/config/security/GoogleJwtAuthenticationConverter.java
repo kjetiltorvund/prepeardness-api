@@ -1,5 +1,7 @@
 package no.kjetil.preparednessapi.config.security;
 
+import no.kjetil.preparednessapi.features.appuser.domain.AppUserRole;
+import no.kjetil.preparednessapi.features.appuser.service.AppUserService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -12,8 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Maps a validated Google ID token to roles, based on the email allowlists in {@link SecurityProperties}.
- * Users that are not on any allowlist are authenticated without roles, and are therefore rejected with 403.
+ * Maps a validated Google ID token to roles. Emails in {@link SecurityProperties#admins()} are always admins,
+ * everyone else gets the role registered in the app_users table.
+ * Users that are not found are authenticated without roles, and are therefore rejected with 403.
  */
 @Component
 public class GoogleJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
@@ -22,9 +25,11 @@ public class GoogleJwtAuthenticationConverter implements Converter<Jwt, Abstract
     static final String ROLE_USER = "ROLE_USER";
 
     private final SecurityProperties securityProperties;
+    private final AppUserService appUserService;
 
-    public GoogleJwtAuthenticationConverter(SecurityProperties securityProperties) {
+    public GoogleJwtAuthenticationConverter(SecurityProperties securityProperties, AppUserService appUserService) {
         this.securityProperties = securityProperties;
+        this.appUserService = appUserService;
     }
 
     @Override
@@ -43,10 +48,14 @@ public class GoogleJwtAuthenticationConverter implements Converter<Jwt, Abstract
             return authorities;
         }
 
-        if (securityProperties.isAdmin(email)) {
+        AppUserRole role = securityProperties.isAdmin(email)
+                ? AppUserRole.ADMIN
+                : appUserService.findActiveRole(email).orElse(null);
+
+        if (role == AppUserRole.ADMIN) {
             authorities.add(new SimpleGrantedAuthority(ROLE_ADMIN));
             authorities.add(new SimpleGrantedAuthority(ROLE_USER));
-        } else if (securityProperties.isUser(email)) {
+        } else if (role == AppUserRole.USER) {
             authorities.add(new SimpleGrantedAuthority(ROLE_USER));
         }
         return authorities;

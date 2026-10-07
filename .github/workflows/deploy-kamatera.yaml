@@ -138,7 +138,6 @@ jobs:
           SUPABASE_SECRET_API_KEY: ${{ secrets.SUPABASE_SECRET_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
           APP_ADMINS: ${{ secrets.APP_ADMINS }}
-          APP_USERS: ${{ secrets.APP_USERS }}
         run: |
           set -euo pipefail
           output="${RUNNER_TEMP}/production.env"
@@ -164,8 +163,6 @@ jobs:
           write_value SUPABASE_SECRET_API_KEY "$SUPABASE_SECRET_API_KEY"
           write_value GOOGLE_CLIENT_ID "$GOOGLE_CLIENT_ID"
           write_value APP_ADMINS "$APP_ADMINS"
-          # Optional: an empty list means only admins have access
-          if [[ -n "$APP_USERS" ]]; then write_value APP_USERS "$APP_USERS"; fi
 
       - name: Copy deployment files
         env:
