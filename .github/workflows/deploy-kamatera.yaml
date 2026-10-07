@@ -39,6 +39,7 @@ jobs:
           MAIL_PASSWORD: ci-placeholder
           SUPABASE_URL: https://example.invalid
           SUPABASE_SECRET_API_KEY: ci-placeholder
+          GOOGLE_CLIENT_ID: ci-placeholder.apps.googleusercontent.com
           SUPABASE_PUB_API_KEY: ci-placeholder
         run: mvn --batch-mode clean verify
 
@@ -51,11 +52,13 @@ jobs:
           MAIL_PASSWORD: ci-placeholder
           SUPABASE_URL: https://example.invalid
           SUPABASE_SECRET_API_KEY: ci-placeholder
+          GOOGLE_CLIENT_ID: ci-placeholder.apps.googleusercontent.com
         run: |
           set -euo pipefail
           docker run --detach --name preparedness-smoke \
             --env MAIL_USERNAME --env MAIL_PASSWORD \
             --env SUPABASE_URL --env SUPABASE_SECRET_API_KEY \
+            --env GOOGLE_CLIENT_ID \
             "${IMAGE_REPOSITORY}:${IMAGE_TAG}"
           trap 'docker logs preparedness-smoke; docker rm --force preparedness-smoke' EXIT
           for attempt in $(seq 1 45); do
@@ -72,6 +75,7 @@ jobs:
           MAIL_PASSWORD: ci-placeholder
           SUPABASE_URL: https://example.invalid
           SUPABASE_SECRET_API_KEY: ci-placeholder
+          GOOGLE_CLIENT_ID: ci-placeholder.apps.googleusercontent.com
         run: docker compose config --quiet
 
       - name: Validate Nginx configuration
@@ -132,6 +136,9 @@ jobs:
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
           SUPABASE_SECRET_API_KEY: ${{ secrets.SUPABASE_SECRET_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          APP_ADMINS: ${{ secrets.APP_ADMINS }}
+          APP_USERS: ${{ secrets.APP_USERS }}
         run: |
           set -euo pipefail
           output="${RUNNER_TEMP}/production.env"
@@ -155,6 +162,10 @@ jobs:
           write_value MAIL_PASSWORD "$MAIL_PASSWORD"
           write_value SUPABASE_URL "$SUPABASE_URL"
           write_value SUPABASE_SECRET_API_KEY "$SUPABASE_SECRET_API_KEY"
+          write_value GOOGLE_CLIENT_ID "$GOOGLE_CLIENT_ID"
+          write_value APP_ADMINS "$APP_ADMINS"
+          # Optional: an empty list means only admins have access
+          if [[ -n "$APP_USERS" ]]; then write_value APP_USERS "$APP_USERS"; fi
 
       - name: Copy deployment files
         env:
