@@ -7,6 +7,7 @@ import no.kjetil.preparednessapi.features.articleitem.service.ItemServicePropert
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -40,6 +42,22 @@ class AppUserServiceImplTest {
                 httpClient,
                 new JacksonConfig().objectMapper(),
                 clock);
+    }
+
+    @Test
+    void shouldUseProductionConstructorWhenCreatedBySpring() {
+        try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
+            context.getBeanFactory().registerSingleton(
+                    "supabaseProperties", new ItemServiceProperties("https://example.supabase.co", "secret-key"));
+            context.getBeanFactory().registerSingleton(
+                    "securityProperties", new SecurityProperties(Set.of(), Duration.ofMinutes(5)));
+            context.getBeanFactory().registerSingleton("httpClient", mock(HttpClient.class));
+            context.getBeanFactory().registerSingleton("objectMapper", new JacksonConfig().objectMapper());
+            context.register(AppUserServiceImpl.class);
+            context.refresh();
+
+            assertNotNull(context.getBean(AppUserServiceImpl.class));
+        }
     }
 
     @Test
