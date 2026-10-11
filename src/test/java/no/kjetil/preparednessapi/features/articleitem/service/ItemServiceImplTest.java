@@ -6,7 +6,7 @@ import no.kjetil.preparednessapi.config.JacksonConfig;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemResponse;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ItemDto;
-import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
+import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateItemDto;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.modelmapper.ModelMapper;
@@ -342,8 +342,8 @@ class ItemServiceImplTest {
         when(response.statusCode()).thenReturn(422);
         when(response.body()).thenReturn(errorBody);
         when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenReturn(response);
-        when(modelMapper.map(any(ArticleItem.class), eq(UpdateArticleDto.class)))
-                .thenReturn(UpdateArticleDto.builder().id(1L).build());
+        when(modelMapper.map(any(ArticleItem.class), eq(UpdateItemDto.class)))
+                .thenReturn(UpdateItemDto.builder().id(1L).build());
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
 
         ItemService itemService = new ItemServiceImpl(

@@ -43,22 +43,52 @@ class ItemServiceImplITest {
                 objectMapper);
     }
 
+    @Test
+    public void shouldCreateNewItem() {
+        // Arrange
+        ArticleItem articleItem = ArticleItem.builder()
+                .articleName("Test")
+                .barcode("7041111138346")
+                .category("Snacks")
+                .placement("Kjøkkenet")
+                .unit("stk")
+                .quantity(3)
+                .build();
+
+        // Act
+        CreateItemResponse response = sut.save(articleItem);
+
+        // Assert
+        assertNotNull(response);
+        assertNotNull(response.article());
+        assertNotNull(response.article().getPlacement());
+        assertNotNull(response.article().getUnit());
+        assertNotNull(response.article().getQuantity());
+    }
+
 
     @Test
     public void shouldUpdateExistingArticle() {
 
         // Arrange
-        ArticleItem testItem = sut.findById(2L);
+        ArticleItem testItem = sut.findById(35L);
 
         assertNotNull(testItem);
 
         String placement = "Test box";
         testItem.setPlacement(placement);
+        testItem.setCategory("Supper");
+        testItem.setQuantity(4);
+        testItem.setUnit("kWH");
 
         // Act
         var updatedItem = sut.updateArticleItem(testItem);
 
         assertEquals(placement, updatedItem.getPlacement());
+        assertEquals("Supper", updatedItem.getCategory());
+        assertEquals(4, updatedItem.getQuantity());
+        assertEquals("kWH", updatedItem.getUnit());
+
     }
 
     @Test

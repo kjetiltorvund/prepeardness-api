@@ -1,18 +1,18 @@
 package no.kjetil.preparednessapi.features.email.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
 import java.util.Properties;
 
 @Service
 public class EmailServiceImpl implements EmailService {
 
-    Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
 
     private final String username;
     private final String password;
@@ -23,7 +23,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public int sendEmail(String to,  String topic, String msg) {
+    public int sendEmail(String to, String topic, String msg) {
 
         Properties prop = new Properties();
         prop.put("mail.smtp.host", "smtp.gmail.com");
@@ -47,12 +47,12 @@ public class EmailServiceImpl implements EmailService {
                     Message.RecipientType.TO,
                     InternetAddress.parse(to)
             );
-            message.setSubject("Testing Gmail SSL");
+            message.setSubject(topic);
             message.setText(msg);
 
             Transport.send(message);
 
-            System.out.println("Done");
+            logger.info("Done sending emails.");
 
         } catch (MessagingException e) {
             logger.error(e.getMessage());

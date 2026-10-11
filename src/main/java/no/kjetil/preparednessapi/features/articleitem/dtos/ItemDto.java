@@ -27,4 +27,7 @@ public final class ItemDto {
     private Boolean expired;
     private String placement;
     private boolean replaced;
+    private int quantity;
+    private String category;
+    private String unit;
 }

@@ -15,17 +15,14 @@ import java.util.Date;
 @Getter
 @Setter
 @Builder
-public class UpdateArticleDto {
+public class UpdateItemDto {
     private Long id;
     @JsonProperty("article_name")
     private String articleName;
     @JsonProperty("created_at")
-    //@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX")
     private OffsetDateTime createdAt;
     @JsonProperty("expiration_date")
-    //@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSXXX")
     private Date expirationDate;
-    //private int daysUntilExpired;
     private String barcode;
     @JsonProperty("qr_code")
     private String qrCode;
@@ -33,4 +30,7 @@ public class UpdateArticleDto {
     private Boolean expired;
     private String placement;
     private boolean replaced;
+    private int quantity;
+    private String category;
+    private String unit;
 }

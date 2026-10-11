@@ -35,4 +35,7 @@ public class ArticleItem {
     private String placement;
 
     private boolean replaced = false;
+    private int quantity;
+    private String category;
+    private String unit;
 }

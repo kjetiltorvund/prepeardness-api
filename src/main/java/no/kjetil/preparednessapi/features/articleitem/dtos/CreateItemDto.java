@@ -30,4 +30,7 @@ public class CreateItemDto {
     private Boolean active;
     private Boolean expired;
     private String placement;
+    private int quantity;
+    private String category;
+    private String unit;
 }

@@ -7,7 +7,7 @@ import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemDto;
 import no.kjetil.preparednessapi.features.articleitem.dtos.CreateItemResponse;
 import no.kjetil.preparednessapi.features.articleitem.dtos.ItemDto;
-import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateArticleDto;
+import no.kjetil.preparednessapi.features.articleitem.dtos.UpdateItemDto;
 import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.modelmapper.ModelMapper;
@@ -210,9 +210,9 @@ public class ItemServiceImpl implements ItemService {
     public ArticleItem patchUpdateArticleItem(ArticleItem articleItem) {
         String uriPath = basePath + "?id=eq." + articleItem.getId();
 
-        UpdateArticleDto updateArticleDto = modelMapper.map(articleItem, UpdateArticleDto.class);
+        UpdateItemDto updateItemDto = modelMapper.map(articleItem, UpdateItemDto.class);
 
-        String body = convertBodyToString(updateArticleDto);
+        String body = convertBodyToString(updateItemDto);
 
         HttpRequest request = createPutRequest(uriPath, body);
 
@@ -249,9 +249,9 @@ public class ItemServiceImpl implements ItemService {
     public ArticleItem updateArticleItem(ArticleItem articleItem) {
         String uriPath = basePath + "?id=eq." + articleItem.getId();
 
-        UpdateArticleDto updateArticleDto = modelMapper.map(articleItem, UpdateArticleDto.class);
+        UpdateItemDto updateItemDto = modelMapper.map(articleItem, UpdateItemDto.class);
 
-        String body = convertBodyToString(updateArticleDto);
+        String body = convertBodyToString(updateItemDto);
 
         HttpRequest request = createPatchRequest(uriPath, body);
 
@@ -545,6 +545,9 @@ public class ItemServiceImpl implements ItemService {
                 .active(articleItem.isActive())
                 .expired(articleItem.isExpired())
                 .placement(articleItem.getPlacement())
+                .quantity(articleItem.getQuantity())
+                .category(articleItem.getCategory())
+                .unit(articleItem.getUnit())
                 .build();
     }
 
