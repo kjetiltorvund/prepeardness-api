@@ -33,4 +33,5 @@ public class CreateItemDto {
     private int quantity;
     private String category;
     private String unit;
+    private int inventory;
 }

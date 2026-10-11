@@ -33,4 +33,5 @@ public class UpdateItemDto {
     private int quantity;
     private String category;
     private String unit;
+    private int inventory;
 }

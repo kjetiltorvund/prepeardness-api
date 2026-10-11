@@ -29,7 +29,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -498,7 +497,7 @@ public class ItemServiceImpl implements ItemService {
 
     private List<ItemDto> insertItems(List<ArticleItem> articleItems) {
         List<CreateItemDto> createItemDtos = articleItems.stream()
-                .map(this::toCreateItemDto)
+                .map(item -> modelMapper.map(item, CreateItemDto.class))
                 .toList();
 
         HttpRequest request = createPostRequest(basePath, convertBodyToString(createItemDtos));
@@ -531,24 +530,6 @@ public class ItemServiceImpl implements ItemService {
             logRequestInterrupted("Save ArticleItems", request, e);
             throw new RuntimeException("Interrupted while saving ArticleItems", e);
         }
-    }
-
-    private CreateItemDto toCreateItemDto(ArticleItem articleItem) {
-        Date createdAt = articleItem.getCreatedAt() != null ? articleItem.getCreatedAt() : new Date();
-
-        return CreateItemDto.builder()
-                .articleName(articleItem.getArticleName())
-                .createdAt(createdAt.toInstant().atOffset(ZoneOffset.UTC))
-                .expirationDate(articleItem.getExpirationDate())
-                .barcode(articleItem.getBarcode())
-                .qrCode(articleItem.getQrCode())
-                .active(articleItem.isActive())
-                .expired(articleItem.isExpired())
-                .placement(articleItem.getPlacement())
-                .quantity(articleItem.getQuantity())
-                .category(articleItem.getCategory())
-                .unit(articleItem.getUnit())
-                .build();
     }
 
     /**

@@ -30,4 +30,5 @@ public final class ItemDto {
     private int quantity;
     private String category;
     private String unit;
+    private int inventory;
 }
