@@ -13,10 +13,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ContextConfiguration(initializers = DotenvTestInitializer.class)
 public class EmailServiceTest {
 
-    @Value("${GMAIL_SMTP_APP_PASSWORD}")
+    @Value("${MAIL_PASSWORD}")
     private String password;
 
-    @Value("${GMAIL_USERNAME:kjetiltorvud@gmail.com}")
+    @Value("${MAIL_USERNAME:kjetiltorvund@gmail.com}")
     private String username;
     
     private EmailService emailService;
