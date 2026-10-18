@@ -14,10 +14,10 @@ import no.kjetil.preparednessapi.DotenvTestInitializer;
 @ContextConfiguration(initializers = DotenvTestInitializer.class)
 class EmailServiceImplTest {
 
-    @Value("${GMAIL_SMTP_APP_PASSWORD}")
+    @Value("${MAIL_PASSWORD}")
     private String password;
 
-    @Value("${GMAIL_USERNAME:kjetiltorvud@gmail.com}")
+    @Value("${MAIL_USERNAME:kjetiltorvud@gmail.com}")
     private String username;
 
     @Disabled("Only need to test this once or manually")

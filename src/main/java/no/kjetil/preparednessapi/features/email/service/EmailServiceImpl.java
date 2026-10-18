@@ -3,6 +3,7 @@ package no.kjetil.preparednessapi.features.email.service;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
+import no.kjetil.preparednessapi.config.exceptionhandlers.InternalErrorException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -59,8 +60,8 @@ public class EmailServiceImpl implements EmailService {
             logger.info("Done sending emails.");
 
         } catch (MessagingException e) {
-            logger.error("Failed to send email.");
-            logger.error(e.getMessage());
+            logger.error("Failed to send email.", e);
+            throw new InternalErrorException("Failed to send email.", e);
         }
 
         return 1;
