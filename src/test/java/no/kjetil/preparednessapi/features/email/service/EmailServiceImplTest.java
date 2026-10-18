@@ -1,5 +1,6 @@
 package no.kjetil.preparednessapi.features.email.service;
 
+import no.kjetil.preparednessapi.DotenvTestInitializer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -8,8 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import no.kjetil.preparednessapi.DotenvTestInitializer;
-
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(initializers = DotenvTestInitializer.class)
 class EmailServiceImplTest {
@@ -17,7 +16,7 @@ class EmailServiceImplTest {
     @Value("${MAIL_PASSWORD}")
     private String password;
 
-    @Value("${MAIL_USERNAME:kjetiltorvud@gmail.com}")
+    @Value("${MAIL_USERNAME:kjetiltorvund@gmail.com}")
     private String username;
 
     @Disabled("Only need to test this once or manually")
