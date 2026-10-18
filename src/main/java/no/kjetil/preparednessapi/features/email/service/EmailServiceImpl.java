@@ -25,12 +25,16 @@ public class EmailServiceImpl implements EmailService {
     @Override
     public int sendEmail(String to, String topic, String msg) {
 
+        logger.info("Trying to send email...");
+
         Properties prop = new Properties();
         prop.put("mail.smtp.host", "smtp.gmail.com");
         prop.put("mail.smtp.port", "465");
         prop.put("mail.smtp.auth", "true");
         prop.put("mail.smtp.socketFactory.port", "465");
         prop.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+
+        logger.info("Given username is: {}", username);
 
         Session session = Session.getInstance(prop,
                 new jakarta.mail.Authenticator() {
@@ -55,6 +59,7 @@ public class EmailServiceImpl implements EmailService {
             logger.info("Done sending emails.");
 
         } catch (MessagingException e) {
+            logger.error("Failed to send email.");
             logger.error(e.getMessage());
         }
 
