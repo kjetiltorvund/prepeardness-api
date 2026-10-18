@@ -29,7 +29,7 @@ public class EmailServiceTest {
         
     }
 
-    //@Disabled
+    @Disabled
     @Test
     public void shouldSendEmail() {
         int responseStatus = emailService.sendEmail("kjetiltorvund@gmail.com", "test", "Hello, World!");
