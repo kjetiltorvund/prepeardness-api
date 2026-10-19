@@ -1,4 +1,7 @@
 package no.kjetil.preparednessapi.features.appuser.dtos;
 
-public record CreateAppUserRequest(String name, String email, String role, boolean isReceivingEmail) {
+/**
+ * @param isReceivingEmail defaults to true when left out
+ */
+public record CreateAppUserRequest(String name, String email, String role, Boolean isReceivingEmail) {
 }

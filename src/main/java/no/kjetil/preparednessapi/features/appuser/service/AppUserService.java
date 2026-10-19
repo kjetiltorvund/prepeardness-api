@@ -3,6 +3,7 @@ package no.kjetil.preparednessapi.features.appuser.service;
 import no.kjetil.preparednessapi.features.appuser.domain.AppUser;
 import no.kjetil.preparednessapi.features.appuser.domain.AppUserRole;
 import no.kjetil.preparednessapi.features.appuser.dtos.AppUserDto;
+import no.kjetil.preparednessapi.features.appuser.dtos.CreateAppUserRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,4 +19,6 @@ public interface AppUserService {
     List<AppUserDto> getAllUsers();
 
     List<AppUser> getAllActiveUsers();
+
+    AppUserDto createAppUser(CreateAppUserRequest appUserRequest);
 }

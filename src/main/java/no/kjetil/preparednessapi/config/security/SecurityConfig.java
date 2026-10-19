@@ -34,6 +34,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/items/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/items/batch").hasRole("ADMIN")
                         .requestMatchers("/items/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/users", "/users/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));

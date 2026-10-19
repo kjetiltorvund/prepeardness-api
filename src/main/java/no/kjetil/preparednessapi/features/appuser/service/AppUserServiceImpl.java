@@ -1,12 +1,16 @@
 package no.kjetil.preparednessapi.features.appuser.service;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.kjetil.preparednessapi.config.security.SecurityProperties;
 import no.kjetil.preparednessapi.features.appuser.domain.AppUser;
 import no.kjetil.preparednessapi.features.appuser.domain.AppUserRole;
 import no.kjetil.preparednessapi.features.appuser.dtos.AppUserDto;
+import no.kjetil.preparednessapi.features.appuser.dtos.CreateAppUserRequest;
 import no.kjetil.preparednessapi.features.articleitem.service.ItemServiceProperties;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -110,32 +111,11 @@ public class AppUserServiceImpl implements AppUserService {
         return appUser;
     }
 
-    private Optional<AppUserDto> fetchAppUser(String normalizedEmail) {
-        String uriPath = BASE_PATH + "?email=eq." + URLEncoder.encode(normalizedEmail, StandardCharsets.UTF_8);
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .GET()
-                .uri(URI.create(apiBaseUrl + uriPath))
-                .timeout(Duration.ofSeconds(10))
-                .header("apiKey", apiKey)
-                .build();
-
+    private static AppUserRole parseRole(String role) {
         try {
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() < HttpStatus.OK.value()
-                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
-                throw new IllegalStateException(String.format("Request %s %s failed. Return code: %d, body: %s",
-                        request.method(), request.uri(), response.statusCode(), response.body()));
-            }
-
-            AppUserDto user = objectMapper.readValue(response.body(), new TypeReference<>() {
-            });
-
-            return Optional.of(user);
-
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+            return AppUserRole.valueOf(role.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Unknown role: " + role, e);
         }
     }
 
@@ -192,6 +172,121 @@ public class AppUserServiceImpl implements AppUserService {
         }
     }
 
+    private Optional<AppUserDto> fetchAppUser(String normalizedEmail) {
+        String uriPath = BASE_PATH + "?email=eq." + URLEncoder.encode(normalizedEmail, StandardCharsets.UTF_8);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .GET()
+                .uri(URI.create(apiBaseUrl + uriPath))
+                .timeout(Duration.ofSeconds(10))
+                .header("apiKey", apiKey)
+                .build();
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                throw new IllegalStateException(String.format("Request %s %s failed. Return code: %d, body: %s",
+                        request.method(), request.uri(), response.statusCode(), response.body()));
+            }
+
+            // The rows are returned as an array, which is empty when no user has the email
+            List<AppUserDto> users = objectMapper.readValue(response.body(), new TypeReference<>() {
+            });
+
+            return users.stream().findFirst();
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public AppUserDto createAppUser(CreateAppUserRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("The creation request is missing.");
+        }
+
+        if (StringUtils.isBlank(request.email())) {
+            throw new IllegalArgumentException("No email provided in the request.");
+        }
+
+        if (StringUtils.isBlank(request.role())) {
+            throw new IllegalArgumentException("Role is missing in the creation request.");
+        }
+
+        // Stored normalized, since lookups by email are normalized the same way
+        String normalizedEmail = request.email().trim().toLowerCase(Locale.ROOT);
+
+        NewAppUserRow newUser = new NewAppUserRow(
+                Date.from(clock.instant()),
+                normalizedEmail,
+                parseRole(request.role()),
+                true,
+                StringUtils.trimToNull(request.name()),
+                request.isReceivingEmail() == null || request.isReceivingEmail());
+
+        AppUserDto createdUser = insertUsers(List.of(newUser)).getFirst();
+
+        // A lookup made before the user existed may have cached an empty role
+        cache.remove(normalizedEmail);
+
+        return createdUser;
+    }
+
+    private List<AppUserDto> insertUsers(List<NewAppUserRow> users) {
+        HttpRequest request;
+        try {
+            request = createPostRequest(BASE_PATH, objectMapper.writeValueAsString(users));
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Unable to serialize new app users", e);
+        }
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+
+            if (response.statusCode() == HttpStatus.CONFLICT.value()) {
+                throw new AppUserAlreadyExistsException("An app user with that email already exists.");
+            }
+
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                throw new IllegalStateException(String.format("Request %s %s failed. Return code: %d, body: %s",
+                        request.method(), request.uri(), response.statusCode(), response.body()));
+            }
+
+            // "Prefer: return=representation" makes the database return the saved rows as an array, including the id.
+            List<AppUserDto> createdUsers = objectMapper.readValue(response.body(), new TypeReference<>() {
+            });
+
+            if (createdUsers.size() != users.size()) {
+                throw new IllegalStateException(String.format("Expected %d created app users, but got %d",
+                        users.size(), createdUsers.size()));
+            }
+            return createdUsers;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create app users", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while creating app users", e);
+        }
+    }
+
+    private HttpRequest createPostRequest(String uriPath, String bodyAsJson) {
+        return HttpRequest.newBuilder()
+                .POST(HttpRequest.BodyPublishers.ofString(bodyAsJson))
+                .uri(URI.create(apiBaseUrl + uriPath))
+                .timeout(Duration.ofSeconds(10))
+                .headers("apiKey", apiKey,
+                        "Content-Type", "application/json",
+                        "Prefer", "return=representation")
+                .build();
+    }
+
     private Optional<AppUserRole> fetchActiveRole(String email) throws IOException, InterruptedException {
         String uriPath = BASE_PATH
                 + "?select=role"
@@ -222,6 +317,17 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     private record AppUserRow(String role) {
+    }
+
+    /**
+     * The columns sent when inserting a user. The id is left out so the database generates it.
+     */
+    private record NewAppUserRow(@JsonProperty("created_at") Date createdAt,
+                                 String email,
+                                 AppUserRole role,
+                                 boolean active,
+                                 String name,
+                                 @JsonProperty("is_receiving_email") boolean isReceivingEmail) {
     }
 
     private record CachedRole(Optional<AppUserRole> role, Instant expiresAt) {

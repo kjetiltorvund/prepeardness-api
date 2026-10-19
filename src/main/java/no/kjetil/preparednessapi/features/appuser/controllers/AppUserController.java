@@ -1,12 +1,12 @@
 package no.kjetil.preparednessapi.features.appuser.controllers;
 
 import no.kjetil.preparednessapi.features.appuser.dtos.AppUserDto;
+import no.kjetil.preparednessapi.features.appuser.dtos.CreateAppUserRequest;
+import no.kjetil.preparednessapi.features.appuser.service.AppUserAlreadyExistsException;
 import no.kjetil.preparednessapi.features.appuser.service.AppUserService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,5 +36,18 @@ public class AppUserController {
 
         return appUser.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
 
+    }
+
+    @PostMapping
+    public ResponseEntity<AppUserDto> createAppUser(@RequestBody CreateAppUserRequest request) {
+        try {
+            AppUserDto createdUser = appUserService.createAppUser(request);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (AppUserAlreadyExistsException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
     }
 }
