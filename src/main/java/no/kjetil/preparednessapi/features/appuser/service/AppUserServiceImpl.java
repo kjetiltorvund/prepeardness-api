@@ -3,7 +3,9 @@ package no.kjetil.preparednessapi.features.appuser.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import no.kjetil.preparednessapi.config.security.SecurityProperties;
+import no.kjetil.preparednessapi.features.appuser.domain.AppUser;
 import no.kjetil.preparednessapi.features.appuser.domain.AppUserRole;
+import no.kjetil.preparednessapi.features.appuser.dtos.AppUserDto;
 import no.kjetil.preparednessapi.features.articleitem.service.ItemServiceProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
@@ -92,6 +95,100 @@ public class AppUserServiceImpl implements AppUserService {
             Thread.currentThread().interrupt();
             logger.warn("Interrupted while looking up app user {}", normalizedEmail, e);
             return Optional.empty();
+        }
+    }
+
+    @Override
+    public Optional<AppUserDto> findUserByEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+
+        Optional<AppUserDto> appUser = fetchAppUser(normalizedEmail);
+
+        return appUser;
+    }
+
+    private Optional<AppUserDto> fetchAppUser(String normalizedEmail) {
+        String uriPath = BASE_PATH + "?email=eq." + URLEncoder.encode(normalizedEmail, StandardCharsets.UTF_8);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .GET()
+                .uri(URI.create(apiBaseUrl + uriPath))
+                .timeout(Duration.ofSeconds(10))
+                .header("apiKey", apiKey)
+                .build();
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                throw new IllegalStateException(String.format("Request %s %s failed. Return code: %d, body: %s",
+                        request.method(), request.uri(), response.statusCode(), response.body()));
+            }
+
+            AppUserDto user = objectMapper.readValue(response.body(), new TypeReference<>() {
+            });
+
+            return Optional.of(user);
+
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<AppUserDto> getAllUsers() {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .GET()
+                .uri(URI.create(apiBaseUrl + BASE_PATH))
+                .timeout(Duration.ofSeconds(10))
+                .header("apiKey", apiKey)
+                .build();
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                throw new IllegalStateException(String.format("Request %s %s failed. Return code: %d, body: %s",
+                        request.method(), request.uri(), response.statusCode(), response.body()));
+            }
+
+            List<AppUserDto> users = objectMapper.readValue(response.body(), new TypeReference<>() {
+            });
+
+            return users;
+
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<AppUser> getAllActiveUsers() {
+        String uriPath = BASE_PATH
+                + "?active=is.true";
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .GET()
+                .uri(URI.create(apiBaseUrl + uriPath))
+                .timeout(Duration.ofSeconds(10))
+                .header("apiKey", apiKey)
+                .build();
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            List<AppUser> users = objectMapper.readValue(response.body(), new TypeReference<>() {
+            });
+
+            return users;
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 

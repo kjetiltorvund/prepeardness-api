@@ -1,5 +1,11 @@
 package no.kjetil.preparednessapi.features.email.service;
 
 public interface EmailService {
-    int sendEmail(String to, String topic, String msg);
+    /**
+     * @param toAddressList - Comma separated list of email addresses to send to.
+     * @param topic         - Email topic or subject
+     * @param msg           - The message to send.
+     * @return 1 for success, else exception
+     */
+    int sendEmail(String toAddressList, String topic, String msg);
 }

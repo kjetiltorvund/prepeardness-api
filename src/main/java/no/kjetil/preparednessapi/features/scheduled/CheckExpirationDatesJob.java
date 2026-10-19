@@ -1,5 +1,7 @@
 package no.kjetil.preparednessapi.features.scheduled;
 
+import no.kjetil.preparednessapi.features.appuser.domain.AppUser;
+import no.kjetil.preparednessapi.features.appuser.service.AppUserService;
 import no.kjetil.preparednessapi.features.articleitem.domain.ArticleItem;
 import no.kjetil.preparednessapi.features.articleitem.service.ItemService;
 import no.kjetil.preparednessapi.features.email.service.EmailService;
@@ -17,10 +19,12 @@ public class CheckExpirationDatesJob {
 
     private final ItemService itemService;
     private final EmailService emailService;
+    private final AppUserService appUserService;
 
-    public CheckExpirationDatesJob(ItemService itemService, EmailService emailService) {
+    public CheckExpirationDatesJob(ItemService itemService, EmailService emailService, AppUserService appUserService) {
         this.itemService = itemService;
         this.emailService = emailService;
+        this.appUserService = appUserService;
     }
 
     @Scheduled(cron = "0 0 7 * * *", zone = "Europe/Oslo")
@@ -32,6 +36,8 @@ public class CheckExpirationDatesJob {
                 .collect(Collectors.joining());
 
         if(!expiredItems.isEmpty()) {
+            List<AppUser> allActiveUsers = appUserService.getAllActiveUsers();
+
             emailService.sendEmail("kjetiltorvund@gmail.com", "Expired goods", expiredItems);
         }
     }

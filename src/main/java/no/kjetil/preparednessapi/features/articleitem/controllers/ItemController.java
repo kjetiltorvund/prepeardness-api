@@ -1,4 +1,4 @@
-package no.kjetil.preparednessapi.features.articleitem.controller;
+package no.kjetil.preparednessapi.features.articleitem.controllers;
 
 import jakarta.validation.Valid;
 import no.kjetil.preparednessapi.config.exceptionhandlers.ResourceNotFoundException;

@@ -24,7 +24,7 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public int sendEmail(String to, String topic, String msg) {
+    public int sendEmail(String toAddressList, String topic, String msg) {
 
         logger.info("Trying to send email...");
 
@@ -50,7 +50,7 @@ public class EmailServiceImpl implements EmailService {
             message.setFrom(new InternetAddress("prepardness-no-reply@gmail.com"));
             message.setRecipients(
                     Message.RecipientType.TO,
-                    InternetAddress.parse(to)
+                    InternetAddress.parse(toAddressList)
             );
             message.setSubject(topic);
             message.setText(msg);

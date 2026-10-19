@@ -1,4 +1,4 @@
-package no.kjetil.preparednessapi.features.articleitem.controller;
+package no.kjetil.preparednessapi.features.articleitem.controllers;
 
 import no.kjetil.preparednessapi.config.ApplicationConfig;
 import no.kjetil.preparednessapi.config.ModelMapperConfig;

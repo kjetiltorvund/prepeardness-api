@@ -153,7 +153,7 @@ class AppUserServiceImplTest {
         when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenReturn(response);
     }
 
-    private static class MutableClock extends Clock {
+    public static class MutableClock extends Clock {
         private Instant instant;
 
         MutableClock(Instant instant) {

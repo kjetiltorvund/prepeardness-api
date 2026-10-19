@@ -1,5 +1,6 @@
 package no.kjetil.preparednessapi.features.scheduled;
 
+import no.kjetil.preparednessapi.features.appuser.service.AppUserService;
 import no.kjetil.preparednessapi.features.articleitem.service.ItemService;
 import no.kjetil.preparednessapi.features.email.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,10 +18,14 @@ class CheckExpirationDatesJobTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private AppUserService appUserService;
+
     @BeforeEach
     public void setup() {
         itemService = mock(ItemService.class);
         emailService = mock(EmailService.class);
+        appUserService = mock(AppUserService.class);
     }
 
     @Test
@@ -30,7 +35,7 @@ class CheckExpirationDatesJobTest {
                 ArticleItemTestData.randomExpiredList(10)
         );
 
-        CheckExpirationDatesJob checkExpirationDatesJob = new CheckExpirationDatesJob(itemService, emailService);
+        CheckExpirationDatesJob checkExpirationDatesJob = new CheckExpirationDatesJob(itemService, emailService, appUserService);
 
         // Act
         checkExpirationDatesJob.checkIfAnythingIsExpired();
