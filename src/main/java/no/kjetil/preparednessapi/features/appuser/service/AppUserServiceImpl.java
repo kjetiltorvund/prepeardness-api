@@ -276,6 +276,47 @@ public class AppUserServiceImpl implements AppUserService {
         }
     }
 
+    @Override
+    public boolean deleteAppUserById(long id) {
+        if (id < 1) {
+            throw new IllegalArgumentException("Invalid app user id: " + id);
+        }
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .DELETE()
+                .uri(URI.create(apiBaseUrl + BASE_PATH + "?id=eq." + id))
+                .timeout(Duration.ofSeconds(10))
+                .headers("apiKey", apiKey, "Prefer", "return=representation")
+                .build();
+
+        try {
+            HttpResponse<String> response = httpClient.send(request, BodyHandlers.ofString());
+
+            if (response.statusCode() < HttpStatus.OK.value()
+                    || response.statusCode() >= HttpStatus.MULTIPLE_CHOICES.value()) {
+                throw new IllegalStateException(String.format("Request %s %s failed. Return code: %d, body: %s",
+                        request.method(), request.uri(), response.statusCode(), response.body()));
+            }
+
+            // "Prefer: return=representation" makes the database return the deleted rows, empty if none matched
+            List<AppUserDto> deletedUsers = objectMapper.readValue(response.body(), new TypeReference<>() {
+            });
+
+            // The cache is keyed by email. Revokes access right away instead of when the cached role expires.
+            deletedUsers.stream()
+                    .map(AppUserDto::email)
+                    .filter(Objects::nonNull)
+                    .forEach(email -> cache.remove(email.trim().toLowerCase(Locale.ROOT)));
+
+            return !deletedUsers.isEmpty();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to delete app user with id " + id, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while deleting app user with id " + id, e);
+        }
+    }
+
     private HttpRequest createPostRequest(String uriPath, String bodyAsJson) {
         return HttpRequest.newBuilder()
                 .POST(HttpRequest.BodyPublishers.ofString(bodyAsJson))

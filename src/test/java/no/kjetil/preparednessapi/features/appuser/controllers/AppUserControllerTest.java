@@ -25,8 +25,10 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -125,6 +127,49 @@ class AppUserControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verify(appUserService, never()).createAppUser(any());
+    }
+
+    @Test
+    void adminCanDeleteUserById() throws Exception {
+        when(appUserService.deleteAppUserById(42)).thenReturn(true);
+
+        mockMvc.perform(apiRequest(delete("/users/42"), ADMIN_TOKEN)).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deletingUnknownUserIsNotFound() throws Exception {
+        when(appUserService.deleteAppUserById(404)).thenReturn(false);
+
+        mockMvc.perform(apiRequest(delete("/users/404"), ADMIN_TOKEN)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deletingWithInvalidIdIsBadRequest() throws Exception {
+        when(appUserService.deleteAppUserById(0)).thenThrow(new IllegalArgumentException("Invalid app user id: 0"));
+
+        mockMvc.perform(apiRequest(delete("/users/0"), ADMIN_TOKEN)).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deletingWithNonNumericIdIsBadRequest() throws Exception {
+        mockMvc.perform(apiRequest(delete("/users/user@example.com"), ADMIN_TOKEN))
+                .andExpect(status().isBadRequest());
+
+        verify(appUserService, never()).deleteAppUserById(anyLong());
+    }
+
+    @Test
+    void userCannotDeleteUsers() throws Exception {
+        mockMvc.perform(apiRequest(delete("/users/42"), USER_TOKEN)).andExpect(status().isForbidden());
+
+        verify(appUserService, never()).deleteAppUserById(anyLong());
+    }
+
+    @Test
+    void deleteWithoutTokenIsUnauthorized() throws Exception {
+        mockMvc.perform(apiRequest(delete("/users/42"))).andExpect(status().isUnauthorized());
+
+        verify(appUserService, never()).deleteAppUserById(anyLong());
     }
 
     @Test

@@ -50,4 +50,15 @@ public class AppUserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }
+
+    @DeleteMapping("{id}")
+    public ResponseEntity<Void> deleteAppUserById(@PathVariable long id) {
+        try {
+            boolean deleted = appUserService.deleteAppUserById(id);
+
+            return deleted ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

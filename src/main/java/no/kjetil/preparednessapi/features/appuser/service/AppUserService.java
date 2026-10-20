@@ -21,4 +21,9 @@ public interface AppUserService {
     List<AppUser> getAllActiveUsers();
 
     AppUserDto createAppUser(CreateAppUserRequest appUserRequest);
+
+    /**
+     * @return true if the user with the given id was deleted, false if there was none
+     */
+    boolean deleteAppUserById(long id);
 }

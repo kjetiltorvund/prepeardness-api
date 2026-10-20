@@ -341,6 +341,75 @@ class AppUserServiceImplTest {
         assertEquals(Optional.of(AppUserRole.USER), appUserService.findActiveRole("new@example.com"));
     }
 
+    @Test
+    void shouldDeleteUserById() throws Exception {
+        respondWith(200, "[{\"id\":42,\"email\":\"user@example.com\",\"role\":\"USER\",\"active\":true}]");
+
+        assertTrue(appUserService.deleteAppUserById(42));
+
+        HttpRequest request = capturedRequest();
+        assertEquals("DELETE", request.method());
+        assertEquals("https://example.supabase.co/rest/v1/app_users?id=eq.42", request.uri().toString());
+        assertEquals(Optional.of("secret-key"), request.headers().firstValue("apiKey"));
+        assertEquals(Optional.of("return=representation"), request.headers().firstValue("Prefer"));
+    }
+
+    @Test
+    void shouldReturnFalseWhenNoUserHasTheId() throws Exception {
+        respondWith(200, "[]");
+
+        assertFalse(appUserService.deleteAppUserById(404));
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {0, -1, Long.MIN_VALUE})
+    void shouldRejectInvalidIdOnDelete(long id) throws Exception {
+        assertThrows(IllegalArgumentException.class, () -> appUserService.deleteAppUserById(id));
+
+        verify(httpClient, never()).send(any(HttpRequest.class), any(BodyHandler.class));
+    }
+
+    @Test
+    void shouldFailWhenSupabaseReturnsErrorOnDelete() throws Exception {
+        respondWith(500, "{\"message\":\"boom\"}");
+
+        assertThrows(IllegalStateException.class, () -> appUserService.deleteAppUserById(42));
+    }
+
+    @Test
+    void shouldFailWhenDeleteRequestFails() throws Exception {
+        when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class))).thenThrow(new IOException("timeout"));
+
+        assertThrows(RuntimeException.class, () -> appUserService.deleteAppUserById(42));
+    }
+
+    @Test
+    void shouldKeepInterruptFlagWhenDeleteIsInterrupted() throws Exception {
+        when(httpClient.send(any(HttpRequest.class), any(BodyHandler.class)))
+                .thenThrow(new InterruptedException("stop"));
+
+        try {
+            assertThrows(RuntimeException.class, () -> appUserService.deleteAppUserById(42));
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            // Clears the flag so it doesn't leak into other tests
+            Thread.interrupted();
+        }
+    }
+
+    @Test
+    void shouldRevokeCachedRoleWhenTheUserIsDeleted() throws Exception {
+        respondWith(200, "[{\"role\":\"ADMIN\"}]");
+        assertEquals(Optional.of(AppUserRole.ADMIN), appUserService.findActiveRole("admin@example.com"));
+
+        // Stored with different casing, the cache key is still normalized
+        respondWith(200, "[{\"id\":42,\"email\":\"Admin@Example.com\",\"role\":\"ADMIN\",\"active\":true}]");
+        appUserService.deleteAppUserById(42);
+
+        respondWith(200, "[]");
+        assertEquals(Optional.empty(), appUserService.findActiveRole("admin@example.com"));
+    }
+
     private HttpRequest capturedRequest() throws Exception {
         ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
         verify(httpClient, atLeastOnce()).send(captor.capture(), any(BodyHandler.class));
