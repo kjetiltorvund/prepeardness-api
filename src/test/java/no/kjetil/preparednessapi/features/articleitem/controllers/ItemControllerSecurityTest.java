@@ -88,8 +88,21 @@ class ItemControllerSecurityTest {
     }
 
     @Test
-    void userCannotDeleteItems() throws Exception {
-        mockMvc.perform(apiRequest(delete("/items/1"), USER_TOKEN)).andExpect(status().isForbidden());
+    void userCanDeleteItems() throws Exception {
+        mockMvc.perform(apiRequest(delete("/items/1"), USER_TOKEN)).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void userCanUpdateItems() throws Exception {
+        mockMvc.perform(apiRequest(put("/items"), USER_TOKEN)
+                        .contentType("application/json")
+                        .content("{\"id\":1,\"name\":\"Pepperonini\",\"quantity\":2}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void strangerCannotDeleteItems() throws Exception {
+        mockMvc.perform(apiRequest(delete("/items/1"), STRANGER_TOKEN)).andExpect(status().isForbidden());
     }
 
     @Test

@@ -31,7 +31,6 @@ public class SecurityConfig {
                         // Only health is exposed, the other actuator endpoints should keep answering 404
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/items/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/items/batch").hasRole("ADMIN")
                         .requestMatchers("/items/**").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/users", "/users/**").hasRole("ADMIN")
