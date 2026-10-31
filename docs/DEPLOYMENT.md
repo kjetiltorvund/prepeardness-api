@@ -5,7 +5,8 @@ Applikasjonen kjører som en Spring Boot-container bak Nginx på Ubuntu 24.04. G
 ## Produksjonsmiljø
 
 - Vert: `45-248-37-116.cloud-xip.com` (`45.248.37.116`)
-- URL: `https://45-248-37-116.cloud-xip.com`
+- URL: `https://api.preparedness.kjetiltorvund.no` (DNS A-post mot `45.248.37.116`)
+- TLS: ett Let's Encrypt-sertifikat (`--cert-name api.preparedness.kjetiltorvund.no`) som dekker både API-domenet og vertsnavnet
 - VPS-katalog: `/opt/prepeardness-api`
 - SSH-bruker for deployment: `deploy`
 - Datalagring: Supabase REST API over HTTPS
@@ -150,8 +151,22 @@ Nyttige kontroller:
 cd /opt/prepeardness-api
 docker compose --env-file .env --env-file .deployment.env ps
 docker compose --env-file .env --env-file .deployment.env logs --tail=100 app
-curl --fail https://45-248-37-116.cloud-xip.com/actuator/health
+curl --fail https://api.preparedness.kjetiltorvund.no/actuator/health
 ```
+
+### Sertifikat for API-domenet på eksisterende VPS
+
+Sertifikatet må finnes før en Nginx-konfigurasjon som peker på det deployes. Mens produksjons-Nginx kjører, server den ACME-utfordringer fra `/var/www/certbot`, så sertifikatet kan hentes uten nedetid:
+
+```bash
+sudo certbot certonly --webroot --webroot-path /var/www/certbot \
+  --cert-name api.preparedness.kjetiltorvund.no \
+  --domain api.preparedness.kjetiltorvund.no \
+  --domain 45-248-37-116.cloud-xip.com \
+  --email kjetiltorvund@gmail.com --agree-tos --no-eff-email --non-interactive
+```
+
+Fornyelse og Nginx-reload håndteres av den eksisterende certbot-timeren og deploy-hooken.
 
 Test sertifikatfornyelse etter første deployment:
 
@@ -163,10 +178,10 @@ systemctl status certbot.timer
 ## Akseptansekontroller
 
 ```bash
-curl --fail https://45-248-37-116.cloud-xip.com/actuator/health
-curl -I http://45-248-37-116.cloud-xip.com/
-curl -I https://45-248-37-116.cloud-xip.com/swagger-ui.html
-curl -I https://45-248-37-116.cloud-xip.com/actuator/info
+curl --fail https://api.preparedness.kjetiltorvund.no/actuator/health
+curl -I http://api.preparedness.kjetiltorvund.no/
+curl -I https://api.preparedness.kjetiltorvund.no/swagger-ui.html
+curl -I https://api.preparedness.kjetiltorvund.no/actuator/info
 ```
 
 Forvent henholdsvis HTTP 200 med `UP`, HTTP 301 og HTTP 404 for de to siste kallene.

@@ -11,7 +11,8 @@ Påkrevde variabler:
 
 Valgfrie variabler:
 
-- `DOMAIN`, standard `45-248-37-116.cloud-xip.com`
+- `DOMAIN`, standard `api.preparedness.kjetiltorvund.no` (offentlig API-domene og sertifikatnavn)
+- `VPS_HOSTNAME`, standard `45-248-37-116.cloud-xip.com` (inkluderes også i sertifikatet)
 - `DEPLOY_USER`, standard `deploy`
 - `DEPLOY_DIR`, standard `/opt/prepeardness-api`
 

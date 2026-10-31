@@ -3,7 +3,8 @@ set -euo pipefail
 
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/prepeardness-api}"
-DOMAIN="${DOMAIN:-45-248-37-116.cloud-xip.com}"
+DOMAIN="${DOMAIN:-api.preparedness.kjetiltorvund.no}"
+VPS_HOSTNAME="${VPS_HOSTNAME:-45-248-37-116.cloud-xip.com}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:?Set CERTBOT_EMAIL before running this script}"
 DEPLOY_PUBLIC_KEY="${DEPLOY_PUBLIC_KEY:?Set DEPLOY_PUBLIC_KEY to the complete contents of the generated .pub file}"
 
@@ -88,7 +89,7 @@ if [[ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]]; then
     cat > "${bootstrap_dir}/default.conf" <<EOF
 server {
     listen 80;
-    server_name ${DOMAIN};
+    server_name ${DOMAIN} ${VPS_HOSTNAME};
     location ^~ /.well-known/acme-challenge/ { root /var/www/certbot; }
     location / { return 404; }
 }
@@ -97,7 +98,7 @@ EOF
         -v "${bootstrap_dir}/default.conf:/etc/nginx/conf.d/default.conf:ro" \
         -v /var/www/certbot:/var/www/certbot:ro nginx:1.27-alpine >/dev/null
     certbot certonly --webroot --webroot-path /var/www/certbot \
-        --domain "$DOMAIN" --email "$CERTBOT_EMAIL" --agree-tos --no-eff-email --non-interactive
+        --cert-name "$DOMAIN" --domain "$DOMAIN" --domain "$VPS_HOSTNAME" --email "$CERTBOT_EMAIL" --agree-tos --no-eff-email --non-interactive
     cleanup
     trap - EXIT
 fi
@@ -118,5 +119,5 @@ chmod 755 /etc/letsencrypt/renewal-hooks/deploy/reload-prepeardness-nginx
 systemctl enable --now certbot.timer
 
 info "VPS bootstrap completed"
-printf 'Verify access with: ssh %s@%s\n' "$DEPLOY_USER" "$DOMAIN"
+printf 'Verify access with: ssh %s@%s\n' "$DEPLOY_USER" "$VPS_HOSTNAME"
 printf 'After verification, disable password and root SSH login as documented in docs/DEPLOYMENT.md.\n'

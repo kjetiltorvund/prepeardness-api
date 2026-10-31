@@ -9,7 +9,7 @@ STATE_FILE="${DEPLOY_DIR}/.last-good-image"
 DEPLOYMENT_ENV="${DEPLOY_DIR}/.deployment.env"
 MAX_HEALTH_RETRIES="${MAX_HEALTH_RETRIES:-45}"
 HEALTH_RETRY_DELAY="${HEALTH_RETRY_DELAY:-2}"
-DOMAIN="${DOMAIN:-45-248-37-116.cloud-xip.com}"
+DOMAIN="${DOMAIN:-api.preparedness.kjetiltorvund.no}"
 
 info() { printf '[INFO] %s\n' "$1"; }
 error() { printf '[ERROR] %s\n' "$1" >&2; }
